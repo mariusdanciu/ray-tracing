@@ -1,0 +1,16 @@
+[package]
+name = "sdl2-test"
+version = "0.1.0"
+edition = "2021"
+
+
+[dependencies.sdl2]
+version = "0.37.0"
+default-features = false
+features = ["ttf", "gfx"]
+
+
+[dependencies]
+rand = "0.8.5"
+fontdue-sdl2="0.3.2"
+glam="0.28.0"
