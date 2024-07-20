@@ -1,6 +1,7 @@
 extern crate sdl2;
 
 use std::borrow::BorrowMut;
+use std::sync::BarrierWaitResult;
 use std::thread::Thread;
 use std::time::{Duration, Instant};
 
@@ -10,6 +11,7 @@ use fontdue_sdl2::fontdue::layout::{CoordinateSystem, Layout, TextStyle};
 use fontdue_sdl2::fontdue::Font;
 use fontdue_sdl2::FontTexture;
 use glam::{vec3, Vec3};
+use rand::seq::index::IndexVecIter;
 use rand::{rngs::ThreadRng, Rng, RngCore};
 use sdl2::event::{Event, WindowEvent};
 use sdl2::keyboard::Keycode;
@@ -45,6 +47,20 @@ impl Sphere {
     }
 }
 
+#[derive(Debug, Copy, Clone)]
+pub struct Ray {
+    origin: Vec3,
+    direction: Vec3,
+}
+
+#[derive(Debug, Copy, Clone)]
+pub struct RayHit {
+    object_index: usize,
+    distance: f32,
+    point: Vec3,
+    normal: Vec3,
+}
+
 fn to_rgba(c: Vec3) -> (u8, u8, u8, u8) {
     (
         (c.x * 255.) as u8,
@@ -54,12 +70,7 @@ fn to_rgba(c: Vec3) -> (u8, u8, u8, u8) {
     )
 }
 
-fn pixel(
-    ray_orig: Vec3,
-    ray_dir: Vec3,
-    light_dir: Vec3,
-    state: &mut State,
-) -> (u8, u8, u8, u8) {
+fn trace_ray(ray: Ray, state: &mut State) -> Option<RayHit> {
     // (bx^2 + by^2)t^2 + (2(axbx + ayby))t + (ax^2 + ay^2 - r^2) = 0
     // where
     // a = ray origin
@@ -67,14 +78,19 @@ fn pixel(
     // r = radius
     // t = hit distance
 
+    if state.spheres.is_empty() {
+        return None;
+    }
+
     let mut closest_sphere = &state.spheres[0];
-    let mut closest_t = -100.0;
-    for sphere in state.spheres.iter() {
+    let mut closest_t = f32::MIN;
+    let mut closest_index: usize = usize::MAX;
 
-        let origin = ray_orig - sphere.position;
+    for (i, sphere) in state.spheres.iter().enumerate() {
+        let origin = ray.origin - sphere.position;
 
-        let a = ray_dir.dot(ray_dir);
-        let b = 2. * origin.dot(ray_dir);
+        let a = ray.direction.dot(ray.direction);
+        let b = 2. * origin.dot(ray.direction);
         let c = origin.dot(origin) - sphere.radius * sphere.radius;
 
         let disc = b * b - 4. * a * c;
@@ -85,36 +101,64 @@ fn pixel(
 
         // closest to ray origin
         let t = (-b + disc.sqrt()) / (2.0 * a);
-        //let t1 = (-b + disc.sqrt()) / 2.0 * a;
+        //let t1 = (-b + disc.sqrt()) / (2.0 * a);
 
-        if t > closest_t {
+        if t < 0. && t > closest_t {
             closest_t = t;
             closest_sphere = sphere;
+            closest_index = i;
         }
-
-
     }
 
-    if closest_t == -100. {
-        return (0, 0, 0, 0);
+    if closest_index == usize::MAX {
+        return None;
     }
 
-    let origin = ray_orig - closest_sphere.position;
-    let hit_point = origin + (ray_dir) * closest_t;
+    let origin = ray.origin - closest_sphere.position;
+    let hit_point = origin + ray.direction * closest_t;
 
     let normal = hit_point.normalize();
 
-    let mut d = normal.dot(-light_dir);
-    if d < 0.0 {
-        d = 0.0;
-    }
-
-    let color = closest_sphere.color * d;
-
-    to_rgba(color)
+    Some(RayHit {
+        object_index: closest_index,
+        distance: closest_t,
+        point: hit_point + closest_sphere.position,
+        normal,
+    })
 }
 
-fn draw(
+fn reflect(incident: Vec3, normal: Vec3) -> Vec3 {
+    incident - (2. * (incident.dot(normal))) * normal
+}
+
+fn pixel(ray: Ray, state: &mut State) -> (u8, u8, u8, u8) {
+    let mut final_color = Vec3::new(0., 0., 0.);
+
+    let bk = Vec3::ZERO;
+    let mut factor = 1f32;
+    let mut r = ray.clone();
+
+    for i in 0..2 {
+        if let Some(hit) = trace_ray(r, state) {
+            let light = hit.normal.dot(-state.light_dir).max(0.0);
+
+            let color = state.spheres[hit.object_index].color * light;
+
+            final_color += color * factor;
+
+            r.origin = hit.point + hit.normal * 0.0001;
+            r.direction = reflect(r.direction, hit.normal).normalize();
+        } else {
+            //final_color += bk * factor;
+            break;
+        }
+        factor *= 0.5;
+    }
+
+    to_rgba(final_color)
+}
+
+fn render(
     texture: &mut Texture,
     camera: &Camera,
     state: &mut State,
@@ -127,8 +171,6 @@ fn draw(
     texture.set_blend_mode(sdl2::render::BlendMode::Blend);
     texture.set_alpha_mod(255);
 
-    let sphere_color = Vec3::new(1., 0., 1.);
-
     texture.with_lock(None, |buffer: &mut [u8], _pitch: usize| {
         //let time = Instant::now();
 
@@ -136,9 +178,10 @@ fn draw(
 
         for ray_dir in camera.ray_directions.iter() {
             let color = pixel(
-                camera.position,
-                *ray_dir,
-                state.light_dir,
+                Ray {
+                    origin: camera.position,
+                    direction: *ray_dir,
+                },
                 state,
             );
 
@@ -158,12 +201,12 @@ fn draw(
 pub fn main() -> Result<(), String> {
     App::run(
         &mut State {
-            light_dir: vec3(-1., -2., -5.).normalize(),
+            light_dir: vec3(0., 0., -1.).normalize(),
             spheres: vec![
                 Sphere::new(Vec3::new(0., 0., 0.), 0.5, Vec3::new(1., 0., 1.)),
-                Sphere::new(Vec3::new(1., 0., -3.), 1.7, Vec3::new(0., 1., 0.))
+                Sphere::new(Vec3::new(1., 0.5, 0.), 0.7, Vec3::new(0., 0.8, 1.)),
             ],
         },
-        draw,
+        render,
     )
 }

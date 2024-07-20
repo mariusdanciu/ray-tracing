@@ -143,10 +143,10 @@ impl Camera {
                 let target = self.inverse_perspective * Vec4::new(p_screen_x, p_screen_y, 1., 1.);
                 let v3 = Vec3::new(target.x, target.y, target.z) / target.w;
                 let ray_direction =
-                    self.inverse_view * Vec4::new(v3.x, v3.y, v3.z, 0.0).normalize();
+                    (self.inverse_view * Vec4::new(v3.x, v3.y, v3.z, 0.0));
 
                 self.ray_directions[x + y * self.width as usize] =
-                    Vec3::new(ray_direction.x, ray_direction.y, ray_direction.z);
+                    Vec3::new(ray_direction.x, ray_direction.y, ray_direction.z).normalize();
 
                 x += 1;
             }
@@ -155,3 +155,4 @@ impl Camera {
         }
     }
 }
+
