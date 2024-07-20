@@ -25,24 +25,44 @@ mod app;
 mod camera;
 
 #[derive(Debug, Clone)]
-pub struct State {
+pub struct Scene {
+    rnd: ThreadRng,
     light_dir: Vec3,
+    ambient_color: Vec3,
     spheres: Vec<Sphere>,
+    materials: Vec<Material>,
+}
+
+#[derive(Debug, Copy, Clone)]
+pub struct Material {
+    albedo: Vec3,
+    roughness: f32,
+    metallic: f32,
+}
+
+impl Default for Material {
+    fn default() -> Self {
+        Self {
+            albedo: Vec3::ZERO,
+            roughness: 1.0,
+            metallic: 0.0,
+        }
+    }
 }
 
 #[derive(Debug, Copy, Clone)]
 pub struct Sphere {
     position: Vec3,
     radius: f32,
-    color: Vec3,
+    material_index: usize,
 }
 
 impl Sphere {
-    fn new(origin: Vec3, radius: f32, color: Vec3) -> Sphere {
+    fn new(origin: Vec3, radius: f32, material_index: usize) -> Sphere {
         Sphere {
             position: origin,
             radius,
-            color,
+            material_index,
         }
     }
 }
@@ -70,7 +90,7 @@ fn to_rgba(c: Vec3) -> (u8, u8, u8, u8) {
     )
 }
 
-fn trace_ray(ray: Ray, state: &mut State) -> Option<RayHit> {
+fn trace_ray(ray: Ray, state: &mut Scene) -> Option<RayHit> {
     // (bx^2 + by^2)t^2 + (2(axbx + ayby))t + (ax^2 + ay^2 - r^2) = 0
     // where
     // a = ray origin
@@ -131,10 +151,9 @@ fn reflect(incident: Vec3, normal: Vec3) -> Vec3 {
     incident - (2. * (incident.dot(normal))) * normal
 }
 
-fn pixel(ray: Ray, state: &mut State) -> (u8, u8, u8, u8) {
+fn pixel(ray: Ray, state: &mut Scene) -> (u8, u8, u8, u8) {
     let mut final_color = Vec3::new(0., 0., 0.);
 
-    let bk = Vec3::ZERO;
     let mut factor = 1f32;
     let mut r = ray.clone();
 
@@ -142,14 +161,25 @@ fn pixel(ray: Ray, state: &mut State) -> (u8, u8, u8, u8) {
         if let Some(hit) = trace_ray(r, state) {
             let light = hit.normal.dot(-state.light_dir).max(0.0);
 
-            let color = state.spheres[hit.object_index].color * light;
+            let material = state.materials[state.spheres[hit.object_index].material_index];
+            let color = material.albedo * light;
 
             final_color += color * factor;
 
             r.origin = hit.point + hit.normal * 0.0001;
-            r.direction = reflect(r.direction, hit.normal).normalize();
+            r.direction = reflect(
+                r.direction,
+                hit.normal
+                    + material.roughness
+                        * vec3(
+                            state.rnd.gen_range(-0.5..0.5),
+                            state.rnd.gen_range(-0.5..0.5),
+                            state.rnd.gen_range(-0.5..0.5),
+                        ),
+            )
+            .normalize();
         } else {
-            //final_color += bk * factor;
+            final_color += state.ambient_color * factor;
             break;
         }
         factor *= 0.5;
@@ -161,7 +191,7 @@ fn pixel(ray: Ray, state: &mut State) -> (u8, u8, u8, u8) {
 fn render(
     texture: &mut Texture,
     camera: &Camera,
-    state: &mut State,
+    state: &mut Scene,
     time_step: f32,
 ) -> Result<(), String> {
     let q = texture.query();
@@ -200,11 +230,25 @@ fn render(
 
 pub fn main() -> Result<(), String> {
     App::run(
-        &mut State {
-            light_dir: vec3(0., 0., -1.).normalize(),
+        &mut Scene {
+            rnd: rand::thread_rng(),
+            light_dir: vec3(-1., -1., -1.).normalize(),
+            ambient_color: vec3(0.6, 0.7, 0.9),
             spheres: vec![
-                Sphere::new(Vec3::new(0., 0., 0.), 0.5, Vec3::new(1., 0., 1.)),
-                Sphere::new(Vec3::new(2., 0.5, 0.), 1.5, Vec3::new(0., 0.8, 1.)),
+                Sphere::new(Vec3::new(0., 0., 0.), 0.5, 0),
+                Sphere::new(Vec3::new(0., -100.5, 0.), 100., 1),
+            ],
+            materials: vec![
+                Material {
+                    albedo: Vec3::new(1., 0., 1.),
+                    roughness: 1.0,
+                    metallic: 0.0,
+                },
+                Material {
+                    albedo: Vec3::new(0.7, 0.7, 0.7),
+                    roughness: 0.7,
+                    metallic: 0.0,
+                },
             ],
         },
         render,
