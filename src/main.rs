@@ -204,7 +204,7 @@ pub fn main() -> Result<(), String> {
             light_dir: vec3(0., 0., -1.).normalize(),
             spheres: vec![
                 Sphere::new(Vec3::new(0., 0., 0.), 0.5, Vec3::new(1., 0., 1.)),
-                Sphere::new(Vec3::new(1., 0.5, 0.), 0.7, Vec3::new(0., 0.8, 1.)),
+                Sphere::new(Vec3::new(2., 0.5, 0.), 1.5, Vec3::new(0., 0.8, 1.)),
             ],
         },
         render,
