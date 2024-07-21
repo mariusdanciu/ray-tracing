@@ -20,7 +20,7 @@ pub struct App {}
 impl App {
     pub fn run<T>(
         state: &mut T,
-        draw: impl Fn(&mut Texture, &Camera, &mut T, f32) -> Result<(), String>,
+        renderer: impl Fn(&mut Texture, &Camera, &mut T, f32, bool) -> Result<(), String>,
     ) -> Result<(), String> {
         let sdl_context = sdl2::init()?;
 
@@ -71,6 +71,8 @@ impl App {
 
         let mut last_mouse_pos = Vec2::new(0., 0.);
         let mut mouse_pressed = false;
+        let mut updated = true;
+
         'running: loop {
             for event in event_pump.poll_iter() {
                 match event {
@@ -90,15 +92,19 @@ impl App {
                     } => match keycode {
                         Some(Keycode::Up) => {
                             camera.update(CameraEvent::Up, time_step);
+                            updated = true;
                         }
                         Some(Keycode::Down) => {
                             camera.update(CameraEvent::Down, time_step);
+                            updated = true;
                         }
                         Some(Keycode::Left) => {
                             camera.update(CameraEvent::Left, time_step);
+                            updated = true;
                         }
                         Some(Keycode::Right) => {
                             camera.update(CameraEvent::Right, time_step);
+                            updated = true;
                         }
                         _ => {}
                     },
@@ -113,6 +119,7 @@ impl App {
                     } => {
                         mouse_pressed = true;
                         last_mouse_pos = Vec2::new(x as f32, y as f32);
+                        sdl_context.mouse().show_cursor(false);
                     }
                     Event::MouseButtonUp {
                         timestamp,
@@ -124,6 +131,7 @@ impl App {
                         y,
                     } => {
                         mouse_pressed = false;
+                        sdl_context.mouse().show_cursor(true);
                     }
 
                     Event::MouseMotion {
@@ -139,11 +147,12 @@ impl App {
                         if mouse_pressed {
                             let mouse_pos = Vec2::new(x as f32, y as f32);
 
-                            let delta = (mouse_pos - last_mouse_pos) * 0.005;
+                            let delta = (mouse_pos - last_mouse_pos) * 0.05;
 
                             last_mouse_pos = mouse_pos;
                             if delta.x != 0.0 || delta.y != 0.0 {
                                 camera.update(CameraEvent::RotateXY { delta }, time_step);
+                                updated = true;
                             }
                         }
                         //println!("{:?} || {}, {}", mousestate, x, y);
@@ -153,9 +162,6 @@ impl App {
                         window_id,
                         win_event,
                     } => match win_event {
-                        WindowEvent::SizeChanged(w, h) => {
-                            changed = Some((w as usize, h as usize));
-                        }
                         WindowEvent::Resized(w, h) => {
                             changed = Some((w as usize, h as usize));
                         }
@@ -197,10 +203,11 @@ impl App {
             }
 
             canvas.clear();
-            draw(&mut texture, &camera, state, time_step)?;
+            renderer(&mut texture, &camera, state, time_step, updated)?;
             canvas.copy(&texture, None, None)?;
             canvas.present();
 
+            updated = false;
             fps += 1;
 
             let millis = timer.elapsed().as_millis();
@@ -209,7 +216,7 @@ impl App {
                 timer = Instant::now();
                 canvas
                     .window_mut()
-                    .set_title(format!("ups {} / fps {} ", ups, fps).as_str())
+                    .set_title(format!("ups {} / fps {}", ups, fps).as_str())
                     .map_err(|e| e.to_string())?;
                 ups = 0;
                 fps = 0;

@@ -78,13 +78,13 @@ impl Camera {
 
     pub fn update(&mut self, event: CameraEvent, time_step: f32) {
         let right_direction = self.forward_direction.cross(self.up).normalize();
-        let speed = 6.;
-        let rotation_speed = 6.;
+        let speed = 0.2;
+        let rotation_speed = 4.;
         match event {
-            CameraEvent::Up => self.position += self.forward_direction * speed * time_step,
-            CameraEvent::Down => self.position -= self.forward_direction * speed * time_step,
-            CameraEvent::Left => self.position -= right_direction * speed * time_step,
-            CameraEvent::Right => self.position += right_direction * speed * time_step,
+            CameraEvent::Up => self.position += self.forward_direction * speed,
+            CameraEvent::Down => self.position -= self.forward_direction * speed,
+            CameraEvent::Left => self.position -= right_direction * speed,
+            CameraEvent::Right => self.position += right_direction * speed,
             CameraEvent::Resize { w, h } => {
                 self.width = w;
                 self.height = h;
