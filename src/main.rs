@@ -40,6 +40,8 @@ pub struct Material {
     albedo: Vec3,
     roughness: f32,
     metallic: f32,
+    emission_color: Vec3,
+    emission_power: f32,
 }
 
 impl Default for Material {
@@ -48,6 +50,8 @@ impl Default for Material {
             albedo: Vec3::ZERO,
             roughness: 1.0,
             metallic: 0.0,
+            emission_color: Vec3::ZERO,
+            emission_power: 0.0,
         }
     }
 }
@@ -161,7 +165,7 @@ impl Scene {
         incident - (2. * (incident.dot(normal))) * normal
     }
 
-    fn pixel(&mut self, ray: Ray, rnd: &mut ThreadRng) -> Vec4 {
+    fn pixel_old(&mut self, ray: Ray, rnd: &mut ThreadRng) -> Vec4 {
         let mut final_color = Vec3::new(0., 0., 0.);
 
         let mut factor = 1f32;
@@ -198,6 +202,40 @@ impl Scene {
         }
 
         vec4(final_color.x, final_color.y, final_color.z, 1.)
+    }
+
+    fn pixel(&mut self, ray: Ray, rnd: &mut ThreadRng) -> Vec4 {
+        let mut light = Vec3::new(0., 0., 0.);
+
+        let mut contribution = Vec3::ONE;
+        let mut r = ray.clone();
+
+        for i in 0..5 {
+            if let Some(hit) = self.trace_ray(r) {
+
+                let material = self.materials[self.spheres[hit.object_index].material_index];
+
+                contribution *= material.albedo;
+                light += material.emission_color*material.emission_power;
+
+                r.origin = hit.point + hit.normal * 0.0001;
+
+                let sphere_random = vec3(
+                    rnd.gen_range(-1.0..=1.0),
+                    rnd.gen_range(-1.0..=1.0),
+                    rnd.gen_range(-1.0..=1.0),
+                ).normalize();
+
+                r.direction = -(hit.normal + sphere_random).normalize();
+
+            } else {
+                light += self.ambient_color * contribution;
+                break;
+            }
+            
+        }
+
+        vec4(light.x, light.y, light.z, 1.)
     }
 
     fn render_chunk(
@@ -313,22 +351,33 @@ pub fn main() -> Result<(), String> {
     let mut scene = Scene {
         frame_index: 1,
         light_dir: vec3(-1., -1., -1.).normalize(),
-        ambient_color: vec3(0.6, 0.8, 1.0),
+        ambient_color: vec3(0., 0., 0.0),
         accumulated: vec![],
         spheres: vec![
             Sphere::new(Vec3::new(0., 0., 0.), 0.5, 0),
             Sphere::new(Vec3::new(0., -100.5, 0.), 100., 1),
+            Sphere::new(Vec3::new(10., 3., -10.), 10.0, 2),
         ],
         materials: vec![
             Material {
                 albedo: Vec3::new(0., 0.5, 0.7),
                 roughness: 1.,
                 metallic: 0.0,
+                ..Default::default()
             },
             Material {
-                albedo: Vec3::new(0.8, 0.8, 0.8),
-                roughness: 1.,
+                albedo: Vec3::new(0.4, 0.4, 0.4),
+                roughness: 0.4,
                 metallic: 0.0,
+                ..Default::default()
+            },
+            Material {
+                albedo: Vec3::new(0.8, 0.5, 0.2),
+                roughness: 0.1,
+                metallic: 0.0,
+                emission_color: Vec3::new(0.8, 0.5, 0.2),
+                emission_power: 6.0,
+                ..Default::default()
             },
         ],
     };
