@@ -14,3 +14,4 @@ features = ["ttf", "gfx"]
 rand = "0.8.5"
 fontdue-sdl2="0.3.2"
 glam="0.28.0"
+rayon="1.10.0"

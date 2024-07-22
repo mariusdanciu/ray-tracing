@@ -13,6 +13,7 @@ use fontdue_sdl2::FontTexture;
 use glam::{vec3, vec4, Vec3, Vec4};
 use rand::seq::index::IndexVecIter;
 use rand::{rngs::ThreadRng, Rng, RngCore};
+use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use sdl2::event::{Event, WindowEvent};
 use sdl2::keyboard::Keycode;
 use sdl2::pixels::{Color, PixelFormatEnum};
@@ -26,7 +27,6 @@ mod camera;
 
 #[derive(Debug, Clone)]
 pub struct Scene {
-    rnd: ThreadRng,
     light_dir: Vec3,
     ambient_color: Vec3,
     spheres: Vec<Sphere>,
@@ -81,6 +81,13 @@ pub struct RayHit {
     distance: f32,
     point: Vec3,
     normal: Vec3,
+}
+
+#[derive(Debug, Copy, Clone)]
+struct Chunk {
+    index: usize,
+    size: usize,
+    pixel_offset: usize,
 }
 
 impl Scene {
@@ -154,7 +161,7 @@ impl Scene {
         incident - (2. * (incident.dot(normal))) * normal
     }
 
-    fn pixel(&mut self, ray: Ray) -> Vec4 {
+    fn pixel(&mut self, ray: Ray, rnd: &mut ThreadRng) -> Vec4 {
         let mut final_color = Vec3::new(0., 0., 0.);
 
         let mut factor = 1f32;
@@ -170,8 +177,6 @@ impl Scene {
                 final_color += color * factor;
 
                 r.origin = hit.point + hit.normal * 0.0001;
-
-                let mut rnd = self.rnd.clone();
 
                 r.direction = self
                     .reflect(
@@ -195,55 +200,109 @@ impl Scene {
         vec4(final_color.x, final_color.y, final_color.z, 1.)
     }
 
-    fn render(
+    fn render_chunk(
+        scene: &mut Scene,
+        camera: &Camera,
+        rnd: &mut ThreadRng,
+        chunk: Chunk,
+        bytes: &mut [u8],
+    ) {
+        let mut i = 0;
+
+        for pos in 0..chunk.size {
+            let ray_dir = camera.ray_directions[pos + chunk.pixel_offset];
+
+            let vcolor = scene.pixel(
+                Ray {
+                    origin: camera.position,
+                    direction: ray_dir,
+                },
+                rnd,
+            );
+
+            scene.accumulated[pos] += vcolor;
+
+            let mut accumulated = scene.accumulated[pos];
+            accumulated /= scene.frame_index as f32;
+
+            accumulated = accumulated.clamp(Vec4::ZERO, Vec4::ONE);
+
+            let color = Scene::to_rgba(accumulated);
+            bytes[i] = color.0;
+            bytes[i + 1] = color.1;
+            bytes[i + 2] = color.2;
+            bytes[i + 3] = color.3;
+
+            i += 4;
+        }
+    }
+
+    fn render_par(
         texture: &mut Texture,
         camera: &Camera,
         scene: &mut Scene,
         time_step: f32,
         updated: bool,
+        rnd: &mut ThreadRng,
     ) -> Result<(), String> {
-        let q = texture.query();
-        let w = q.width as usize;
-        let h = q.height as usize;
+        let w = camera.width;
+        let h = camera.height;
 
         if updated {
             scene.accumulated = vec![Vec4::ZERO; w * h];
             scene.frame_index = 1;
         }
 
-        texture.set_blend_mode(sdl2::render::BlendMode::Blend);
-        texture.set_alpha_mod(255);
+        let num_chunks = 10;
+        let mut img: Vec<u8> = vec![0; w * h * 4];
 
-        texture.with_lock(None, |buffer: &mut [u8], _pitch: usize| {
-            //let time = Instant::now();
+        let img_len = img.len();
+        let img_chunk_size = (img_len / (num_chunks * 4)) * 4;
 
-            let mut i = 0;
-            let mut pos = 0;
+        let chunks: Vec<(usize, &mut [u8])> = img.chunks_mut(img_chunk_size).enumerate().collect();
 
-            for ray_dir in camera.ray_directions.iter() {
-                //let t = Instant::now();
-                let vcolor = scene.pixel(Ray {
-                    origin: camera.position,
-                    direction: *ray_dir,
-                });
+        let col: Vec<Scene> = chunks
+            .into_par_iter()
+            .map(|e| {
+                let mut rnd = rand::thread_rng();
+                let buf_len = e.1.len();
 
-                scene.accumulated[pos] += vcolor;
+                let acc_size = buf_len / 4;
 
-                let mut accumulated = scene.accumulated[pos];
-                accumulated /= scene.frame_index as f32;
+                let offset = e.0 * acc_size;
 
-                accumulated = accumulated.clamp(Vec4::ZERO, Vec4::ONE);
-                
-                let color = Scene::to_rgba(accumulated);
-                buffer[i] = color.0;
-                buffer[i + 1] = color.1;
-                buffer[i + 2] = color.2;
-                buffer[i + 3] = color.3;
+                let mut acc = vec![Vec4::ZERO; acc_size];
+                acc.copy_from_slice(&scene.accumulated[offset..(offset + acc_size)]);
 
-                i += 4;
-                pos += 1;
-            }
-        })?;
+                let mut s = Scene {
+                    light_dir: scene.light_dir,
+                    ambient_color: scene.ambient_color,
+                    spheres: scene.spheres.clone(),
+                    materials: scene.materials.clone(),
+                    accumulated: acc,
+                    frame_index: scene.frame_index,
+                };
+
+                let chunk = Chunk {
+                    index: e.0,
+                    size: acc_size,
+                    pixel_offset: offset,
+                };
+                Scene::render_chunk(&mut s, camera, &mut rnd, chunk, e.1);
+                s
+            })
+            .collect();
+
+        let mut offset = 0;
+        for c in col {
+            let len = c.accumulated.len();
+            scene.accumulated[offset..offset + len].copy_from_slice(c.accumulated.as_slice());
+            offset += len;
+        }
+
+        texture
+            .update(None, img.as_slice(), w * 4)
+            .map_err(|e| e.to_string())?;
 
         scene.frame_index += 1;
 
@@ -253,7 +312,6 @@ impl Scene {
 pub fn main() -> Result<(), String> {
     let mut scene = Scene {
         frame_index: 1,
-        rnd: rand::thread_rng(),
         light_dir: vec3(-1., -1., -1.).normalize(),
         ambient_color: vec3(0.6, 0.8, 1.0),
         accumulated: vec![],
@@ -275,5 +333,5 @@ pub fn main() -> Result<(), String> {
         ],
     };
 
-    App::run(&mut scene, Scene::render)
+    App::run(&mut scene, Scene::render_par)
 }

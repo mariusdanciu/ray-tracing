@@ -20,7 +20,7 @@ pub struct App {}
 impl App {
     pub fn run<T>(
         state: &mut T,
-        renderer: impl Fn(&mut Texture, &Camera, &mut T, f32, bool) -> Result<(), String>,
+        renderer: impl Fn(&mut Texture, &Camera, &mut T, f32, bool, &mut ThreadRng) -> Result<(), String>,
     ) -> Result<(), String> {
         let sdl_context = sdl2::init()?;
 
@@ -73,6 +73,7 @@ impl App {
         let mut mouse_pressed = false;
         let mut updated = true;
 
+        let mut rnd = rand::thread_rng();
         'running: loop {
             for event in event_pump.poll_iter() {
                 match event {
@@ -162,6 +163,9 @@ impl App {
                         window_id,
                         win_event,
                     } => match win_event {
+                        WindowEvent::SizeChanged(w, h) => {
+                            changed = Some((w as usize, h as usize));
+                        }
                         WindowEvent::Resized(w, h) => {
                             changed = Some((w as usize, h as usize));
                         }
@@ -187,6 +191,7 @@ impl App {
 
             if let Some((w, h)) = changed {
                 println!("Resized");
+                updated = true;
                 camera.update(
                     CameraEvent::Resize {
                         w: w as usize,
@@ -203,7 +208,7 @@ impl App {
             }
 
             canvas.clear();
-            renderer(&mut texture, &camera, state, time_step, updated)?;
+            renderer(&mut texture, &camera, state, time_step, updated, &mut rnd)?;
             canvas.copy(&texture, None, None)?;
             canvas.present();
 
