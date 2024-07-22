@@ -212,27 +212,40 @@ impl Scene {
 
         for i in 0..5 {
             if let Some(hit) = self.trace_ray(r) {
-
                 let material = self.materials[self.spheres[hit.object_index].material_index];
 
                 contribution *= material.albedo;
-                light += material.emission_color*material.emission_power;
+                light += material.emission_color * material.emission_power;
 
                 r.origin = hit.point + hit.normal * 0.0001;
 
-                let sphere_random = vec3(
-                    rnd.gen_range(-1.0..=1.0),
-                    rnd.gen_range(-1.0..=1.0),
-                    rnd.gen_range(-1.0..=1.0),
-                ).normalize();
+                if material.roughness < 1. {
+                    r.direction = self
+                        .reflect(
+                            r.direction,
+                            hit.normal
+                                + material.roughness
+                                    * vec3(
+                                        rnd.gen_range(-0.5..0.5),
+                                        rnd.gen_range(-0.5..0.5),
+                                        rnd.gen_range(-0.5..0.5),
+                                    ),
+                        )
+                        .normalize();
+                } else {
+                    let sphere_random = vec3(
+                        rnd.gen_range(-1.0..=1.0),
+                        rnd.gen_range(-1.0..=1.0),
+                        rnd.gen_range(-1.0..=1.0),
+                    )
+                    .normalize();
 
-                r.direction = -(hit.normal + sphere_random).normalize();
-
+                    r.direction = -(hit.normal + sphere_random).normalize();
+                }
             } else {
                 light += self.ambient_color * contribution;
                 break;
             }
-            
         }
 
         vec4(light.x, light.y, light.z, 1.)
@@ -356,27 +369,27 @@ pub fn main() -> Result<(), String> {
         spheres: vec![
             Sphere::new(Vec3::new(0., 0., 0.), 0.5, 0),
             Sphere::new(Vec3::new(0., -100.5, 0.), 100., 1),
-            Sphere::new(Vec3::new(10., 3., -10.), 10.0, 2),
+            Sphere::new(Vec3::new(10., 0., -10.), 10.0, 2),
         ],
         materials: vec![
             Material {
                 albedo: Vec3::new(0., 0.5, 0.7),
-                roughness: 1.,
+                roughness: 0.7,
                 metallic: 0.0,
                 ..Default::default()
             },
             Material {
                 albedo: Vec3::new(0.4, 0.4, 0.4),
-                roughness: 0.4,
+                roughness: 1.,
                 metallic: 0.0,
                 ..Default::default()
             },
             Material {
                 albedo: Vec3::new(0.8, 0.5, 0.2),
-                roughness: 0.1,
+                roughness: 1.,
                 metallic: 0.0,
                 emission_color: Vec3::new(0.8, 0.5, 0.2),
-                emission_power: 6.0,
+                emission_power: 4.0,
                 ..Default::default()
             },
         ],
