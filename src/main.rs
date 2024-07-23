@@ -1,26 +1,11 @@
 extern crate sdl2;
 
-use std::borrow::BorrowMut;
-use std::sync::BarrierWaitResult;
-use std::thread::{self, Thread};
-use std::time::{Duration, Instant};
-
 use app::App;
-use camera::{Camera, CameraEvent};
-use fontdue_sdl2::fontdue::layout::{CoordinateSystem, Layout, TextStyle};
-use fontdue_sdl2::fontdue::Font;
-use fontdue_sdl2::FontTexture;
+use camera::Camera;
 use glam::{vec3, vec4, Vec3, Vec4};
-use rand::seq::index::IndexVecIter;
-use rand::{rngs::ThreadRng, Rng, RngCore};
+use rand::{rngs::ThreadRng, Rng};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
-use sdl2::event::{Event, WindowEvent};
-use sdl2::keyboard::Keycode;
-use sdl2::pixels::{Color, PixelFormatEnum};
-use sdl2::rect::Rect;
-use sdl2::render::{Canvas, Texture, TextureCreator};
-use sdl2::timer::Timer;
-use sdl2::video::{Window, WindowContext};
+use sdl2::render::Texture;
 
 mod app;
 mod camera;
@@ -33,6 +18,7 @@ pub struct Scene {
     materials: Vec<Material>,
     accumulated: Vec<Vec4>,
     frame_index: u32,
+    difuse: bool,
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -52,6 +38,44 @@ impl Default for Material {
             metallic: 0.0,
             emission_color: Vec3::ZERO,
             emission_power: 0.0,
+        }
+    }
+}
+
+impl Material {
+    fn reflect(&self, incident: Vec3, normal: Vec3) -> Vec3 {
+        incident - (2. * (incident.dot(normal))) * normal
+    }
+
+    pub fn reflect_ray(&self, ray: Ray, hit: RayHit, rnd: &mut ThreadRng) -> Ray {
+        let mut direction = ray.direction;
+
+        if self.roughness < 1. {
+            direction = self
+                .reflect(
+                    direction,
+                    hit.normal
+                        + self.roughness
+                            * vec3(
+                                rnd.gen_range(-0.5..0.5),
+                                rnd.gen_range(-0.5..0.5),
+                                rnd.gen_range(-0.5..0.5),
+                            ),
+                )
+                .normalize();
+        } else {
+            let sphere_random = vec3(
+                rnd.gen_range(-1.0..=1.0),
+                rnd.gen_range(-1.0..=1.0),
+                rnd.gen_range(-1.0..=1.0),
+            )
+            .normalize();
+
+            direction = -(hit.normal + sphere_random).normalize();
+        }
+        Ray {
+            origin: ray.origin,
+            direction,
         }
     }
 }
@@ -89,7 +113,6 @@ pub struct RayHit {
 
 #[derive(Debug, Copy, Clone)]
 struct Chunk {
-    index: usize,
     size: usize,
     pixel_offset: usize,
 }
@@ -161,89 +184,36 @@ impl Scene {
         })
     }
 
-    fn reflect(&self, incident: Vec3, normal: Vec3) -> Vec3 {
-        incident - (2. * (incident.dot(normal))) * normal
-    }
-
-    fn pixel_old(&mut self, ray: Ray, rnd: &mut ThreadRng) -> Vec4 {
-        let mut final_color = Vec3::new(0., 0., 0.);
-
-        let mut factor = 1f32;
-        let mut r = ray.clone();
-
-        for i in 0..5 {
-            if let Some(hit) = self.trace_ray(r) {
-                let light = hit.normal.dot(-self.light_dir).max(0.0);
-
-                let material = self.materials[self.spheres[hit.object_index].material_index];
-                let color = material.albedo * light;
-
-                final_color += color * factor;
-
-                r.origin = hit.point + hit.normal * 0.0001;
-
-                r.direction = self
-                    .reflect(
-                        r.direction,
-                        hit.normal
-                            + material.roughness
-                                * vec3(
-                                    rnd.gen_range(-0.5..0.5),
-                                    rnd.gen_range(-0.5..0.5),
-                                    rnd.gen_range(-0.5..0.5),
-                                ),
-                    )
-                    .normalize();
-            } else {
-                final_color += self.ambient_color * factor;
-                break;
-            }
-            factor *= 0.5;
-        }
-
-        vec4(final_color.x, final_color.y, final_color.z, 1.)
-    }
-
     fn pixel(&mut self, ray: Ray, rnd: &mut ThreadRng) -> Vec4 {
         let mut light = Vec3::new(0., 0., 0.);
 
         let mut contribution = Vec3::ONE;
         let mut r = ray.clone();
+        let mut factor = 1f32;
 
         for i in 0..5 {
             if let Some(hit) = self.trace_ray(r) {
                 let material = self.materials[self.spheres[hit.object_index].material_index];
 
-                contribution *= material.albedo;
-                light += material.emission_color * material.emission_power;
+                if !self.difuse {
+                    let light_angle = hit.normal.dot(-self.light_dir).max(0.0);
+                    let color = material.albedo * light_angle;
+                    light += color * factor;
+                    factor *= 0.5;
+                } else {
+                    contribution *= material.albedo;
+                    light += material.emission_color * material.emission_power;
+                }
 
                 r.origin = hit.point + hit.normal * 0.0001;
 
-                if material.roughness < 1. {
-                    r.direction = self
-                        .reflect(
-                            r.direction,
-                            hit.normal
-                                + material.roughness
-                                    * vec3(
-                                        rnd.gen_range(-0.5..0.5),
-                                        rnd.gen_range(-0.5..0.5),
-                                        rnd.gen_range(-0.5..0.5),
-                                    ),
-                        )
-                        .normalize();
-                } else {
-                    let sphere_random = vec3(
-                        rnd.gen_range(-1.0..=1.0),
-                        rnd.gen_range(-1.0..=1.0),
-                        rnd.gen_range(-1.0..=1.0),
-                    )
-                    .normalize();
-
-                    r.direction = -(hit.normal + sphere_random).normalize();
-                }
+                r = material.reflect_ray(r, hit, rnd);
             } else {
-                light += self.ambient_color * contribution;
+                if !self.difuse {
+                    light += self.ambient_color * factor;
+                } else {
+                    light += self.ambient_color * contribution;
+                }
                 break;
             }
         }
@@ -332,10 +302,10 @@ impl Scene {
                     materials: scene.materials.clone(),
                     accumulated: acc,
                     frame_index: scene.frame_index,
+                    difuse: scene.difuse,
                 };
 
                 let chunk = Chunk {
-                    index: e.0,
                     size: acc_size,
                     pixel_offset: offset,
                 };
@@ -366,21 +336,24 @@ pub fn main() -> Result<(), String> {
         light_dir: vec3(-1., -1., -1.).normalize(),
         ambient_color: vec3(0., 0., 0.0),
         accumulated: vec![],
+        difuse: true,
         spheres: vec![
             Sphere::new(Vec3::new(0., 0., 0.), 0.5, 0),
             Sphere::new(Vec3::new(0., -100.5, 0.), 100., 1),
-            Sphere::new(Vec3::new(10., 0., -10.), 10.0, 2),
+            Sphere::new(Vec3::new(10., 3., -14.), 10.0, 2),
         ],
         materials: vec![
             Material {
                 albedo: Vec3::new(0., 0.5, 0.7),
-                roughness: 0.7,
+                roughness: 1.0,
                 metallic: 0.0,
+                emission_color: Vec3::new(1.0, 0.0, 1.),
+                emission_power: 0.5,
                 ..Default::default()
             },
             Material {
                 albedo: Vec3::new(0.4, 0.4, 0.4),
-                roughness: 1.,
+                roughness: 1.0,
                 metallic: 0.0,
                 ..Default::default()
             },
@@ -389,7 +362,7 @@ pub fn main() -> Result<(), String> {
                 roughness: 1.,
                 metallic: 0.0,
                 emission_color: Vec3::new(0.8, 0.5, 0.2),
-                emission_power: 4.0,
+                emission_power: 10.0,
                 ..Default::default()
             },
         ],
