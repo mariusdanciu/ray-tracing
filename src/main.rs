@@ -19,14 +19,24 @@ pub struct Scene {
     accumulated: Vec<Vec4>,
     frame_index: u32,
     difuse: bool,
+    max_ray_bounces: u8,
+}
+
+#[derive(Debug, Copy, Clone)]
+enum MaterialType {
+    Reflective {
+        roughness: f32,
+    },
+    Refractive {
+        transparency: f32,
+        refraction_index: f32,
+    },
 }
 
 #[derive(Debug, Copy, Clone)]
 pub struct Material {
     albedo: Vec3,
-    roughness: f32,
-    metallic: f32,
-    emission_color: Vec3,
+    kind: MaterialType,
     emission_power: f32,
 }
 
@@ -34,48 +44,32 @@ impl Default for Material {
     fn default() -> Self {
         Self {
             albedo: Vec3::ZERO,
-            roughness: 1.0,
-            metallic: 0.0,
-            emission_color: Vec3::ZERO,
+            kind: MaterialType::Reflective { roughness: 1.0 },
             emission_power: 0.0,
         }
     }
 }
 
 impl Material {
-    fn reflect(&self, incident: Vec3, normal: Vec3) -> Vec3 {
-        incident - (2. * (incident.dot(normal))) * normal
-    }
-
-    pub fn reflect_ray(&self, ray: Ray, hit: RayHit, rnd: &mut ThreadRng) -> Ray {
-        let mut direction = ray.direction;
-
-        if self.roughness < 1. {
-            direction = self
-                .reflect(
-                    direction,
-                    hit.normal
-                        + self.roughness
-                            * vec3(
-                                rnd.gen_range(-0.5..0.5),
-                                rnd.gen_range(-0.5..0.5),
-                                rnd.gen_range(-0.5..0.5),
-                            ),
-                )
-                .normalize();
-        } else {
-            let sphere_random = vec3(
-                rnd.gen_range(-1.0..=1.0),
-                rnd.gen_range(-1.0..=1.0),
-                rnd.gen_range(-1.0..=1.0),
-            )
-            .normalize();
-
-            direction = -(hit.normal + sphere_random).normalize();
+    fn fresnel(&self, incident: Vec3, normal: Vec3, index: f32) -> f64 {
+        let i_dot_n = incident.dot(normal) as f64;
+        let mut eta_i = 1.0;
+        let mut eta_t = index as f64;
+        if i_dot_n > 0.0 {
+            eta_i = eta_t;
+            eta_t = 1.0;
         }
-        Ray {
-            origin: ray.origin,
-            direction,
+
+        let sin_t = eta_i / eta_t * (1.0f64 - i_dot_n * i_dot_n).max(0.0).sqrt();
+        if sin_t > 1.0 {
+            //Total internal reflection
+            return 1.0;
+        } else {
+            let cos_t = (1.0 - sin_t * sin_t).max(0.0).sqrt();
+            let cos_i = cos_t.abs();
+            let r_s = ((eta_t * cos_i) - (eta_i * cos_t)) / ((eta_t * cos_i) + (eta_i * cos_t));
+            let r_p = ((eta_i * cos_i) - (eta_t * cos_t)) / ((eta_i * cos_i) + (eta_t * cos_t));
+            return (r_s * r_s + r_p * r_p) / 2.0;
         }
     }
 }
@@ -103,12 +97,80 @@ pub struct Ray {
     direction: Vec3,
 }
 
+impl Ray {
+    fn reflect(&self, normal: Vec3) -> Vec3 {
+        self.direction - (2. * (self.direction.dot(normal))) * normal
+    }
+
+    fn transmission(&self, intersection: RayHit, bias: f32, index: f32) -> Option<Ray> {
+        let mut ref_n = intersection.normal;
+        let mut eta_t = index;
+        let mut eta_i = 1.0;
+        let mut i_dot_n = self.direction.dot(intersection.normal);
+        if i_dot_n < 0.0 {
+            //Outside the surface
+            i_dot_n = -i_dot_n;
+        } else {
+            //Inside the surface; invert the normal and swap the indices of refraction
+            ref_n = -intersection.normal;
+            eta_i = eta_t;
+            eta_t = 1.0;
+        }
+
+        let eta = eta_i / eta_t;
+        let k = 1.0 - (eta * eta) * (1.0 - i_dot_n * i_dot_n);
+        if k < 0.0 {
+            None
+        } else {
+            Some(Ray {
+                origin: intersection.point + (ref_n * bias),
+                direction: (self.direction + i_dot_n * ref_n) * eta - ref_n * k.sqrt(),
+            })
+        }
+    }
+
+    fn reflection_ray(&self, hit: RayHit, roughness: f32, rnd: &mut ThreadRng) -> Ray {
+        let mut direction = self.direction;
+        if roughness < 1. {
+            direction = self
+                .reflect(
+                    hit.normal
+                        + roughness
+                            * vec3(
+                                rnd.gen_range(-0.5..0.5),
+                                rnd.gen_range(-0.5..0.5),
+                                rnd.gen_range(-0.5..0.5),
+                            ),
+                )
+                .normalize();
+        } else {
+            let sphere_random = vec3(
+                rnd.gen_range(-1.0..1.0),
+                rnd.gen_range(-1.0..1.0),
+                rnd.gen_range(-1.0..1.0),
+            )
+            .normalize();
+
+            direction = -(hit.normal + sphere_random).normalize();
+        }
+        Ray {
+            origin: hit.point + hit.normal * 0.0001,
+            direction,
+        }
+    }
+
+    pub fn refraction_ray(&self, hit: RayHit, refraction_index: f32) -> Option<Ray> {
+        self.transmission(hit, 0.001, refraction_index)
+    }
+}
+
 #[derive(Debug, Copy, Clone)]
 pub struct RayHit {
     object_index: usize,
     distance: f32,
     point: Vec3,
     normal: Vec3,
+    material: Material,
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -176,48 +238,133 @@ impl Scene {
 
         let normal = hit_point.normalize();
 
+        let material = self.materials[self.spheres[closest_index].material_index];
         Some(RayHit {
             object_index: closest_index,
             distance: closest_t,
             point: hit_point + closest_sphere.position, // translation cancel
             normal,
+            material,
         })
     }
 
-    fn pixel(&mut self, ray: Ray, rnd: &mut ThreadRng) -> Vec4 {
-        let mut light = Vec3::new(0., 0., 0.);
-
-        let mut contribution = Vec3::ONE;
-        let mut r = ray.clone();
-        let mut factor = 1f32;
-
-        for i in 0..5 {
-            if let Some(hit) = self.trace_ray(r) {
-                let material = self.materials[self.spheres[hit.object_index].material_index];
-
-                if !self.difuse {
-                    let light_angle = hit.normal.dot(-self.light_dir).max(0.0);
-                    let color = material.albedo * light_angle;
-                    light += color * factor;
-                    factor *= 0.5;
-                } else {
-                    contribution *= material.albedo;
-                    light += material.emission_color * material.emission_power;
-                }
-
-                r.origin = hit.point + hit.normal * 0.0001;
-
-                r = material.reflect_ray(r, hit, rnd);
-            } else {
-                if !self.difuse {
-                    light += self.ambient_color * factor;
-                } else {
-                    light += self.ambient_color * contribution;
-                }
-                break;
-            }
+    fn color(
+        &mut self,
+        ray: Ray,
+        rnd: &mut ThreadRng,
+        depth: u8,
+        light: Vec3,
+        contribution: Vec3,
+    ) -> Vec3 {
+        if depth >= self.max_ray_bounces {
+            return light;
         }
+        if let Some(hit) = self.trace_ray(ray) {
+            match hit.material.kind {
+                MaterialType::Reflective { roughness } => {
+                    let mut ll = light;
+                    if !self.difuse {
+                        let light_angle = hit.normal.dot(-self.light_dir).max(0.0);
+                        ll += hit.material.albedo * light_angle;
+                    } else {
+                        ll += hit.material.albedo * hit.material.emission_power;
+                    }
+                    let r = ray.reflection_ray(hit, roughness, rnd);
+                    self.color(
+                        r,
+                        rnd,
+                        depth + 1,
+                        ll,
+                        contribution * hit.material.albedo,
+                    )
+                }
+                MaterialType::Refractive {
+                    transparency,
+                    refraction_index,
+                } => {
+                    let mut refraction_color = Vec3::ZERO;
+                    let kr = hit
+                        .material
+                        .fresnel(ray.direction, hit.normal, refraction_index)
+                        as f32;
 
+                    if kr < 1.0 {
+                        if let Some(refraction_ray) = ray.refraction_ray(hit, refraction_index) {
+                            refraction_color = self.color(
+                                refraction_ray,
+                                rnd,
+                                depth + 1,
+                                light + hit.material.albedo * hit.material.emission_power,
+                                contribution * hit.material.albedo,
+                            );
+
+                        }
+                    }
+
+                    let reflection_ray = Ray {
+                        origin: hit.point + hit.normal * 0.0001,
+                        direction: ray.reflect(-hit.normal),
+                    };
+
+                    let reflection_color = self.color(
+                        reflection_ray,
+                        rnd,
+                        depth + 1,
+                        light + hit.material.albedo * hit.material.emission_power,
+                        contribution * hit.material.albedo,
+                    );
+
+                    let mut color = reflection_color * kr + refraction_color * (1.0 - kr);
+                    color = color * transparency * hit.material.albedo;
+                    color
+                }
+            }
+        } else {
+            light + self.ambient_color * contribution
+        }
+    }
+
+    fn pixel(&mut self, ray: Ray, rnd: &mut ThreadRng) -> Vec4 {
+        let mut light = Vec3::ZERO; // BLACK
+
+        let contribution = Vec3::ONE;
+
+        light = self.color(ray, rnd, 0, light, contribution);
+
+        /*         for i in 0..self.max_ray_bounces {
+                   if let Some(hit) = self.trace_ray(r) {
+                       if !self.difuse {
+                           let light_angle = hit.normal.dot(-self.light_dir).max(0.0);
+                           light += hit.material.albedo * light_angle;
+                       } else {
+                           light += hit.material.albedo * hit.material.emission_power;
+                       }
+
+                       contribution *= hit.material.albedo;
+
+                       match hit.material.kind {
+                           MaterialType::Reflective { roughness } => {
+                               r = ray.reflection_ray(hit, roughness, rnd)
+                           }
+                           MaterialType::Refractive {
+                               transparency,
+                               refraction_index,
+                           } => {
+                               let refraction_ray = ray.refraction_ray(hit, refraction_index);
+                               let reflection_ray = ray.reflect(hit.normal);
+
+                               let kr = hit
+                                   .material
+                                   .fresnel(ray.direction, hit.normal, refraction_index)
+                                   as f32;
+                           }
+                       }
+                   } else {
+                       light += self.ambient_color * contribution;
+                       break;
+                   }
+               }
+        */
         vec4(light.x, light.y, light.z, 1.)
     }
 
@@ -303,6 +450,7 @@ impl Scene {
                     accumulated: acc,
                     frame_index: scene.frame_index,
                     difuse: scene.difuse,
+                    max_ray_bounces: scene.max_ray_bounces,
                 };
 
                 let chunk = Chunk {
@@ -331,7 +479,8 @@ impl Scene {
     }
 }
 pub fn main() -> Result<(), String> {
-    let mut scene = Scene {
+    let mut scene1 = Scene {
+        max_ray_bounces: 5,
         frame_index: 1,
         light_dir: vec3(-1., -1., -1.).normalize(),
         ambient_color: vec3(0., 0., 0.0),
@@ -345,28 +494,66 @@ pub fn main() -> Result<(), String> {
         materials: vec![
             Material {
                 albedo: Vec3::new(0., 0.5, 0.7),
-                roughness: 1.0,
-                metallic: 0.0,
-                emission_color: Vec3::new(1.0, 0.0, 1.),
+                kind: MaterialType::Reflective { roughness: 1.0 },
                 emission_power: 0.5,
                 ..Default::default()
             },
             Material {
                 albedo: Vec3::new(0.4, 0.4, 0.4),
-                roughness: 1.0,
-                metallic: 0.0,
+                kind: MaterialType::Reflective { roughness: 1.0 },
                 ..Default::default()
             },
             Material {
                 albedo: Vec3::new(0.8, 0.5, 0.2),
-                roughness: 1.,
-                metallic: 0.0,
-                emission_color: Vec3::new(0.8, 0.5, 0.2),
+                kind: MaterialType::Reflective { roughness: 1.0 },
                 emission_power: 10.0,
                 ..Default::default()
             },
         ],
     };
 
-    App::run(&mut scene, Scene::render_par)
+    let mut scene2 = Scene {
+        max_ray_bounces: 5,
+        frame_index: 1,
+        light_dir: vec3(-1., -1., -1.).normalize(),
+        ambient_color: vec3(0.0, 0.0, 0.0),
+        accumulated: vec![],
+        difuse: true,
+        spheres: vec![
+            Sphere::new(Vec3::new(0., 0., -0.5), 0.5, 0),
+            Sphere::new(Vec3::new(0., -100.5, 0.), 100., 1),
+            Sphere::new(Vec3::new(0.5, 0.0, 1.0), 0.5, 2),
+            Sphere::new(Vec3::new(10., 3., -14.), 10.0, 3),
+        ],
+        materials: vec![
+            Material {
+                albedo: Vec3::new(0.3, 0.0, 1.0),
+                kind: MaterialType::Reflective { roughness: 1.0 },
+                emission_power: 1.8,
+                ..Default::default()
+            },
+            Material {
+                albedo: Vec3::new(0.0, 0.9, 0.1),
+                kind: MaterialType::Reflective { roughness: 1.0 },
+                emission_power: 0.3,
+                ..Default::default()
+            },
+            Material {
+                albedo: Vec3::new(1.0, 1.0, 1.0),
+                kind: MaterialType::Refractive {
+                    transparency: 1.0,
+                    refraction_index: 0.97,
+                },
+                emission_power: 0.0,
+                ..Default::default()
+            },
+            Material {
+                albedo: Vec3::new(0.8, 0.5, 0.2),
+                kind: MaterialType::Reflective { roughness: 1.0 },
+                emission_power: 8.0,
+                ..Default::default()
+            },
+        ],
+    };
+    App::run(&mut scene2, Scene::render_par)
 }
