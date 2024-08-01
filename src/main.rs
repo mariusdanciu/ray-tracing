@@ -533,9 +533,9 @@ pub fn main() -> Result<(), String> {
                 ..Default::default()
             },
             Material {
-                albedo: Vec3::new(0.0, 0.9, 0.1),
+                albedo: Vec3::new(0.9, 0.9, 0.2),
                 kind: MaterialType::Reflective { roughness: 1.0 },
-                emission_power: 0.3,
+                emission_power: 0.2,
                 ..Default::default()
             },
             Material {
@@ -550,7 +550,7 @@ pub fn main() -> Result<(), String> {
             Material {
                 albedo: Vec3::new(0.8, 0.5, 0.2),
                 kind: MaterialType::Reflective { roughness: 1.0 },
-                emission_power: 8.0,
+                emission_power: 10.0,
                 ..Default::default()
             },
         ],
