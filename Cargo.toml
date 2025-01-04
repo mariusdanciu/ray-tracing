@@ -1,13 +1,16 @@
 [package]
-name = "sdl2-test"
+name = "ray-tracing"
 version = "0.1.0"
 edition = "2021"
+
+[build]
+rustc-args = ["-Vv"]
 
 
 [dependencies.sdl2]
 version = "0.37.0"
 default-features = false
-features = ["ttf", "gfx"]
+features = ["ttf"]
 
 
 [dependencies]

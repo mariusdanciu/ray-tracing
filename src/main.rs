@@ -1,5 +1,7 @@
 extern crate sdl2;
 
+use std::num::NonZero;
+
 use app::App;
 use camera::Camera;
 use glam::{vec3, vec4, Vec3, Vec4};
@@ -10,11 +12,26 @@ use sdl2::render::Texture;
 mod app;
 mod camera;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Copy, Clone)]
+pub enum Object3D {
+    Sphere {
+        position: Vec3,
+        radius: f32,
+        material_index: usize,
+    },
+
+    Triangle {
+        v1: Vec3,
+        v2: Vec3,
+        v3: Vec3,
+        material_index: usize,
+    },
+}
+
 pub struct Scene {
     light_dir: Vec3,
     ambient_color: Vec3,
-    spheres: Vec<Sphere>,
+    objects: Vec<Object3D>,
     materials: Vec<Material>,
     accumulated: Vec<Vec4>,
     frame_index: u32,
@@ -38,6 +55,24 @@ pub struct Material {
     albedo: Vec3,
     kind: MaterialType,
     emission_power: f32,
+}
+
+impl Object3D {
+    fn material_index(&self) -> usize {
+        match self {
+            Self::Sphere {
+                position,
+                radius,
+                material_index,
+            } => *material_index,
+            Self::Triangle {
+                v1,
+                v2,
+                v3,
+                material_index,
+            } => *material_index,
+        }
+    }
 }
 
 impl Default for Material {
@@ -74,16 +109,9 @@ impl Material {
     }
 }
 
-#[derive(Debug, Copy, Clone)]
-pub struct Sphere {
-    position: Vec3,
-    radius: f32,
-    material_index: usize,
-}
-
-impl Sphere {
-    fn new(origin: Vec3, radius: f32, material_index: usize) -> Sphere {
-        Sphere {
+impl Object3D {
+    fn new_sphere(origin: Vec3, radius: f32, material_index: usize) -> Object3D {
+        Object3D::Sphere {
             position: origin,
             radius,
             material_index,
@@ -189,43 +217,91 @@ impl Scene {
         )
     }
 
-    fn trace_ray(&mut self, ray: Ray) -> Option<RayHit> {
-        // (bx^2 + by^2)t^2 + (2(axbx + ayby))t + (ax^2 + ay^2 - r^2) = 0
-        // where
-        // a = ray origin
-        // b = ray direction
-        // r = radius
-        // t = hit distance
+    fn compute_distance(&self, ray: &Ray, obj: &Object3D) -> Option<f32> {
+        match obj {
+            Object3D::Sphere {
+                position,
+                radius,
+                ..
+            } => {
+                // (bx^2 + by^2 + bz^2)t^2 + (2(axbx + ayby + azbz))t + (ax^2 + ay^2 + az^2 - r^2) = 0
+                // where
+                // a = ray origin
+                // b = ray direction
+                // r = radius
+                // t = hit distance
 
-        if self.spheres.is_empty() {
+                let origin = ray.origin - *position;
+
+                let a = ray.direction.dot(ray.direction);
+                let b = 2. * origin.dot(ray.direction);
+                let c = origin.dot(origin) - radius * radius;
+
+                let disc = b * b - 4. * a * c;
+
+                if disc < 0.0 {
+                    return None;
+                }
+
+                // closest to ray origin
+                let t = (-b + disc.sqrt()) / (2.0 * a);
+                Some(t)
+            }
+
+            Object3D::Triangle {
+                v1,
+                v2,
+                v3,
+                material_index,
+            } => None,
+        }
+    }
+
+
+    fn ray_hit(&self, obj: Object3D, ray: Ray, distance: f32, index: usize) -> Option<RayHit> {
+        match obj {
+            Object3D::Sphere {
+                position,
+                radius,
+                ..
+            } => {
+                
+                let origin = ray.origin - position; // translation
+                let hit_point = origin + ray.direction * distance;
+        
+                let normal = hit_point.normalize();
+        
+        
+                let material = self.materials[obj.material_index()];
+                Some(RayHit {
+                    object_index: index,
+                    distance,
+                    point: hit_point + position, // translation cancel
+                    normal,
+                    material,
+                })
+            },
+            Object3D::Triangle { v1, v2, v3, material_index } => 
+                None,
+
+        }
+    }
+    fn trace_ray(&mut self, ray: Ray) -> Option<RayHit> {
+        if self.objects.is_empty() {
             return None;
         }
 
-        let mut closest_sphere = &self.spheres[0];
+        let mut closest_object = self.objects[0];
         let mut closest_t = f32::MIN;
         let mut closest_index: usize = usize::MAX;
 
-        for (i, sphere) in self.spheres.iter().enumerate() {
-            let origin = ray.origin - sphere.position;
-
-            let a = ray.direction.dot(ray.direction);
-            let b = 2. * origin.dot(ray.direction);
-            let c = origin.dot(origin) - sphere.radius * sphere.radius;
-
-            let disc = b * b - 4. * a * c;
-
-            if disc < 0.0 {
-                continue;
-            }
-
-            // closest to ray origin
-            let t = (-b + disc.sqrt()) / (2.0 * a);
-            //let t1 = (-b + disc.sqrt()) / (2.0 * a);
-
-            if t < 0. && t > closest_t {
-                closest_t = t;
-                closest_sphere = sphere;
-                closest_index = i;
+        for (i, obj) in self.objects.iter().enumerate() {
+            if let Some(t) = self.compute_distance(&ray, &obj) {
+                if t < 0. && t > closest_t {
+                    closest_t = t;
+                    closest_object = *obj;
+                    closest_index = i;
+                }
             }
         }
 
@@ -233,19 +309,7 @@ impl Scene {
             return None;
         }
 
-        let origin = ray.origin - closest_sphere.position; // translation
-        let hit_point = origin + ray.direction * closest_t;
-
-        let normal = hit_point.normalize();
-
-        let material = self.materials[self.spheres[closest_index].material_index];
-        Some(RayHit {
-            object_index: closest_index,
-            distance: closest_t,
-            point: hit_point + closest_sphere.position, // translation cancel
-            normal,
-            material,
-        })
+        self.ray_hit(closest_object, ray, closest_t, closest_index)
     }
 
     fn color(
@@ -270,13 +334,7 @@ impl Scene {
                         ll += hit.material.albedo * hit.material.emission_power;
                     }
                     let r = ray.reflection_ray(hit, roughness, rnd);
-                    self.color(
-                        r,
-                        rnd,
-                        depth + 1,
-                        ll,
-                        contribution * hit.material.albedo,
-                    )
+                    self.color(r, rnd, depth + 1, ll, contribution * hit.material.albedo)
                 }
                 MaterialType::Refractive {
                     transparency,
@@ -297,7 +355,6 @@ impl Scene {
                                 light + hit.material.albedo * hit.material.emission_power,
                                 contribution * hit.material.albedo,
                             );
-
                         }
                     }
 
@@ -331,40 +388,6 @@ impl Scene {
 
         light = self.color(ray, rnd, 0, light, contribution);
 
-        /*         for i in 0..self.max_ray_bounces {
-                   if let Some(hit) = self.trace_ray(r) {
-                       if !self.difuse {
-                           let light_angle = hit.normal.dot(-self.light_dir).max(0.0);
-                           light += hit.material.albedo * light_angle;
-                       } else {
-                           light += hit.material.albedo * hit.material.emission_power;
-                       }
-
-                       contribution *= hit.material.albedo;
-
-                       match hit.material.kind {
-                           MaterialType::Reflective { roughness } => {
-                               r = ray.reflection_ray(hit, roughness, rnd)
-                           }
-                           MaterialType::Refractive {
-                               transparency,
-                               refraction_index,
-                           } => {
-                               let refraction_ray = ray.refraction_ray(hit, refraction_index);
-                               let reflection_ray = ray.reflect(hit.normal);
-
-                               let kr = hit
-                                   .material
-                                   .fresnel(ray.direction, hit.normal, refraction_index)
-                                   as f32;
-                           }
-                       }
-                   } else {
-                       light += self.ambient_color * contribution;
-                       break;
-                   }
-               }
-        */
         vec4(light.x, light.y, light.z, 1.)
     }
 
@@ -445,7 +468,7 @@ impl Scene {
                 let mut s = Scene {
                     light_dir: scene.light_dir,
                     ambient_color: scene.ambient_color,
-                    spheres: scene.spheres.clone(),
+                    objects: scene.objects.clone(),
                     materials: scene.materials.clone(),
                     accumulated: acc,
                     frame_index: scene.frame_index,
@@ -480,33 +503,25 @@ impl Scene {
 }
 pub fn main() -> Result<(), String> {
     let mut scene1 = Scene {
-        max_ray_bounces: 5,
+        max_ray_bounces: 2,
         frame_index: 1,
         light_dir: vec3(-1., -1., -1.).normalize(),
-        ambient_color: vec3(0., 0., 0.0),
+        ambient_color: vec3(0., 0.0, 0.0),
         accumulated: vec![],
-        difuse: true,
-        spheres: vec![
-            Sphere::new(Vec3::new(0., 0., 0.), 0.5, 0),
-            Sphere::new(Vec3::new(0., -100.5, 0.), 100., 1),
-            Sphere::new(Vec3::new(10., 3., -14.), 10.0, 2),
+        difuse: false,
+        objects: vec![
+            Object3D::new_sphere(Vec3::new(0., 0.0, 0.), 0.5, 0),
+            Object3D::new_sphere(Vec3::new(0., -100.5, 0.), 100., 1),
         ],
         materials: vec![
             Material {
-                albedo: Vec3::new(0., 0.5, 0.7),
-                kind: MaterialType::Reflective { roughness: 1.0 },
-                emission_power: 0.5,
-                ..Default::default()
-            },
-            Material {
-                albedo: Vec3::new(0.4, 0.4, 0.4),
+                albedo: Vec3::new(0.9, 0.1, 0.0),
                 kind: MaterialType::Reflective { roughness: 1.0 },
                 ..Default::default()
             },
             Material {
-                albedo: Vec3::new(0.8, 0.5, 0.2),
-                kind: MaterialType::Reflective { roughness: 1.0 },
-                emission_power: 10.0,
+                albedo: Vec3::new(0.1, 0.4, 1.0),
+                kind: MaterialType::Reflective { roughness: 0.1 },
                 ..Default::default()
             },
         ],
@@ -515,15 +530,15 @@ pub fn main() -> Result<(), String> {
     let mut scene2 = Scene {
         max_ray_bounces: 5,
         frame_index: 1,
-        light_dir: vec3(-1., -1., -1.).normalize(),
+        light_dir: vec3(1., -1., -1.).normalize(),
         ambient_color: vec3(0.0, 0.0, 0.0),
         accumulated: vec![],
         difuse: true,
-        spheres: vec![
-            Sphere::new(Vec3::new(0., 0., -0.5), 0.5, 0),
-            Sphere::new(Vec3::new(0., -100.5, 0.), 100., 1),
-            Sphere::new(Vec3::new(0.5, 0.0, 1.0), 0.5, 2),
-            Sphere::new(Vec3::new(10., 3., -14.), 10.0, 3),
+        objects: vec![
+            Object3D::new_sphere(Vec3::new(0., 0., -0.5), 0.5, 0),
+            Object3D::new_sphere(Vec3::new(0., -100.5, 0.), 100., 1),
+            //Sphere::new(Vec3::new(0.5, 0.0, 1.0), 0.5, 2),
+            Object3D::new_sphere(Vec3::new(10., 3., -14.), 10.0, 3),
         ],
         materials: vec![
             Material {
