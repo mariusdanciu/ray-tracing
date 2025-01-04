@@ -1,4 +1,3 @@
-
 use app::App;
 use camera::Camera;
 use glam::{vec3, vec4, Vec3, Vec4};
@@ -114,6 +113,14 @@ impl Object3D {
             material_index,
         }
     }
+    fn new_triangle(v1: Vec3, v2: Vec3, v3: Vec3, material_index: usize) -> Object3D {
+        Object3D::Triangle {
+            v1,
+            v2,
+            v3,
+            material_index,
+        }
+    }
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -217,9 +224,7 @@ impl Scene {
     fn compute_distance(&self, ray: &Ray, obj: &Object3D) -> Option<f32> {
         match obj {
             Object3D::Sphere {
-                position,
-                radius,
-                ..
+                position, radius, ..
             } => {
                 // (bx^2 + by^2 + bz^2)t^2 + (2(axbx + ayby + azbz))t + (ax^2 + ay^2 + az^2 - r^2) = 0
                 // where
@@ -242,6 +247,7 @@ impl Scene {
 
                 // closest to ray origin
                 let t = (-b + disc.sqrt()) / (2.0 * a);
+                
                 Some(t)
             }
 
@@ -249,27 +255,58 @@ impl Scene {
                 v1,
                 v2,
                 v3,
-                material_index,
-            } => None,
+                ..
+            } => {
+                
+                let e1 = (*v2 - *v1);
+                let e2 = (*v3 - *v1);
+                let ray_cross_e2 = ray.direction.cross(e2);
+                let det = e1.dot(ray_cross_e2);
+                
+                if det > -f32::EPSILON && det < f32::EPSILON {
+                    
+                    return None; // This ray is parallel to this triangle.
+                }
+
+                let inv_det = 1.0 / det;
+                let s = ray.origin - *v1;
+                let u = inv_det * s.dot(ray_cross_e2);
+                if u < 0.0 || u > 1.0 {
+                    
+                    return None;
+                }
+                
+                let s_cross_e1 = s.cross(e1);
+
+                let v = inv_det * ray.direction.dot(s_cross_e1);
+                if v < 0.0 || u + v > 1.0 {
+                    return None;
+                }
+                
+                // At this stage we can compute t to find out where the intersection point is on the line.
+                let t = inv_det * e2.dot(s_cross_e1);
+                
+                if t < f32::EPSILON {
+                    return Some(t);
+                } else {
+                    // This means that there is a line intersection but not a ray intersection.
+                    return None;
+                }
+            }
         }
     }
-
 
     fn ray_hit(&self, obj: Object3D, ray: Ray, distance: f32, index: usize) -> Option<RayHit> {
         match obj {
             Object3D::Sphere {
-                position,
-                radius,
-                ..
+                position, radius:_, material_index
             } => {
-                
                 let origin = ray.origin - position; // translation
                 let hit_point = origin + ray.direction * distance;
-        
+
                 let normal = hit_point.normalize();
-        
-        
-                let material = self.materials[obj.material_index()];
+
+                let material = self.materials[material_index];
                 Some(RayHit {
                     object_index: index,
                     distance,
@@ -277,10 +314,27 @@ impl Scene {
                     normal,
                     material,
                 })
-            },
-            Object3D::Triangle { v1, v2, v3, material_index } => 
-                None,
+            }
+            Object3D::Triangle {
+                v1,
+                v2,
+                v3,
+                material_index
+            } => {
+                
+                let hit_point = ray.origin + ray.direction * distance;
 
+                let normal = (v1 - v2).cross(v1 - v3).normalize();
+
+                let material = self.materials[material_index];
+                Some(RayHit {
+                    object_index: index,
+                    distance,
+                    point: hit_point, 
+                    normal,
+                    material,
+                })
+            },
         }
     }
     fn trace_ray(&mut self, ray: Ray) -> Option<RayHit> {
@@ -294,6 +348,7 @@ impl Scene {
 
         for (i, obj) in self.objects.iter().enumerate() {
             if let Some(t) = self.compute_distance(&ray, &obj) {
+                
                 if t < 0. && t > closest_t {
                     closest_t = t;
                     closest_object = *obj;
@@ -429,7 +484,7 @@ impl Scene {
         texture: &mut Texture,
         camera: &Camera,
         scene: &mut Scene,
-        updated: bool
+        updated: bool,
     ) -> Result<(), String> {
         let w = camera.width;
         let h = camera.height;
@@ -498,20 +553,27 @@ impl Scene {
 }
 pub fn main() -> Result<(), String> {
     let mut scene1 = Scene {
-        max_ray_bounces: 2,
+        max_ray_bounces: 5,
         frame_index: 1,
         light_dir: vec3(-1., -1., -1.).normalize(),
         ambient_color: vec3(0., 0.0, 0.0),
         accumulated: vec![],
         difuse: false,
         objects: vec![
-            Object3D::new_sphere(Vec3::new(0., 0.0, 0.), 0.5, 0),
-            Object3D::new_sphere(Vec3::new(0., -100.5, 0.), 100., 1),
+            Object3D::new_sphere(Vec3::new(-0.3, 0.0, -0.5), 0.5, 0),
+            Object3D::new_sphere(Vec3::new(0., -100.5, 0.), 100., 2),
+            Object3D::new_triangle(vec3(-1.5, 0.5, 0.0), vec3(-1.5, -0.5, 0.0), vec3(-0.5, -0.5, -1.5), 1),
+            Object3D::new_triangle(vec3(-1.5, 0.5, 0.0), vec3(-0.5, -0.5, -1.5), vec3(-0.5, 0.5, -1.5), 1),
         ],
         materials: vec![
             Material {
                 albedo: Vec3::new(0.9, 0.1, 0.0),
                 kind: MaterialType::Reflective { roughness: 1.0 },
+                ..Default::default()
+            },
+            Material {
+                albedo: Vec3::new(0.1, 0.8, 0.0),
+                kind: MaterialType::Reflective { roughness: 0.1 },
                 ..Default::default()
             },
             Material {
@@ -533,7 +595,9 @@ pub fn main() -> Result<(), String> {
             Object3D::new_sphere(Vec3::new(0., 0., -0.5), 0.5, 0),
             Object3D::new_sphere(Vec3::new(0., -100.5, 0.), 100., 1),
             //Sphere::new(Vec3::new(0.5, 0.0, 1.0), 0.5, 2),
-            Object3D::new_sphere(Vec3::new(10., 3., -14.), 10.0, 3),
+            Object3D::new_sphere(Vec3::new(10., 5., -24.), 10.0, 3),
+            Object3D::new_triangle(vec3(-1.5, 0.5, 0.0), vec3(-1.5, -0.5, 0.0), vec3(-0.5, -0.5, -1.5), 4),
+            Object3D::new_triangle(vec3(-1.5, 0.5, 0.0), vec3(-0.5, -0.5, -1.5), vec3(-0.5, 0.5, -1.5), 4),
         ],
         materials: vec![
             Material {
@@ -560,7 +624,13 @@ pub fn main() -> Result<(), String> {
             Material {
                 albedo: Vec3::new(0.8, 0.5, 0.2),
                 kind: MaterialType::Reflective { roughness: 1.0 },
-                emission_power: 10.0,
+                emission_power: 26.0,
+                ..Default::default()
+            },
+            Material {
+                albedo: Vec3::new(0.1, 0.4, 1.0),
+                kind: MaterialType::Reflective { roughness: 0.2 },
+                emission_power: 1.,
                 ..Default::default()
             },
         ],
