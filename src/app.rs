@@ -6,12 +6,13 @@ use sdl2::render::Texture;
 use std::time::Instant;
 
 use crate::camera::{Camera, CameraEvent};
+use crate::renderer::Renderer;
+use crate::scene::Scene;
 pub struct App {}
 
 impl App {
-    pub fn run<T>(
-        state: &mut T,
-        renderer: impl Fn(&mut Texture, &Camera, &mut T, bool) -> Result<(), String>,
+    pub fn run(
+        renderer: &mut Renderer,
     ) -> Result<(), String> {
         let sdl_context = sdl2::init()?;
 
@@ -187,7 +188,7 @@ impl App {
             }
 
             canvas.clear();
-            renderer(&mut texture, &camera, state, updated)?;
+            renderer.render_par(&mut texture, &camera, updated)?;
             canvas.copy(&texture, None, None)?;
             canvas.present();
 
