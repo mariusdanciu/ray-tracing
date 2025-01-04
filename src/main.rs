@@ -30,7 +30,7 @@ pub fn main() -> Result<(), String> {
                 ..Default::default()
             },
             Material {
-                albedo: Vec3::new(0.1, 0.8, 0.0),
+                albedo: Vec3::new(0.4, 0.4, 0.4),
                 kind: MaterialType::Reflective { roughness: 0.1 },
                 ..Default::default()
             },
