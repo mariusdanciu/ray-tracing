@@ -2,12 +2,11 @@ use glam::Vec2;
 use sdl2::event::{Event, WindowEvent};
 use sdl2::keyboard::Keycode;
 use sdl2::pixels::PixelFormatEnum;
-use sdl2::render::Texture;
 use std::time::Instant;
 
 use crate::camera::{Camera, CameraEvent};
 use crate::renderer::Renderer;
-use crate::scene::Scene;
+
 pub struct App {}
 
 impl App {

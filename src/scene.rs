@@ -135,7 +135,7 @@ impl Scene {
             return None;
         }
 
-        ray.hit(closest_object, ray, closest_t, closest_index, &self.materials)
+        ray.hit(closest_object, ray, closest_t, &self.materials)
     }
 
     fn color(

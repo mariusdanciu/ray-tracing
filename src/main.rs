@@ -1,12 +1,8 @@
 use std::sync::Arc;
 
 use app::App;
-use camera::Camera;
-use glam::{vec3, vec4, Vec3, Vec4};
-use rand::{rngs::ThreadRng, Rng};
-use rayon::iter::{IntoParallelIterator, ParallelIterator};
+use glam::{vec3, Vec3};
 use scene::{Material, MaterialType, Object3D, Scene};
-use sdl2::render::Texture;
 
 mod app;
 mod camera;
@@ -15,9 +11,8 @@ mod renderer;
 mod ray;
 
 pub fn main() -> Result<(), String> {
-    
 
-    let mut scene1 = Scene {
+    let scene1 = Scene {
         max_ray_bounces: 5,
         light_dir: vec3(-1., -1., -1.).normalize(),
         ambient_color: vec3(0., 0.0, 0.0),
@@ -47,7 +42,7 @@ pub fn main() -> Result<(), String> {
         ],
     };
 
-    let mut scene2 = Scene {
+    let _scene2 = Scene {
         max_ray_bounces: 5,
         light_dir: vec3(1., -1., -1.).normalize(),
         ambient_color: vec3(0.0, 0.0, 0.0),

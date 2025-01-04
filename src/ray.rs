@@ -14,8 +14,6 @@ pub struct Ray {
 
 #[derive(Debug, Copy, Clone)]
 pub struct RayHit {
-    pub object_index: usize,
-    pub distance: f32,
     pub point: Vec3,
     pub normal: Vec3,
     pub material: Material,
@@ -54,7 +52,7 @@ impl Ray {
     }
 
     pub fn reflection_ray(&self, hit: RayHit, roughness: f32, rnd: &mut ThreadRng) -> Ray {
-        let mut dir = Vec3::ZERO;
+        let dir: Vec3;
         if roughness < 1. {
             dir = self
                 .reflect(
@@ -165,7 +163,7 @@ impl Ray {
         }
     }
 
-    pub fn hit(&self, obj: Object3D, ray: Ray, distance: f32, index: usize, materials: &Vec<Material>) -> Option<RayHit> {
+    pub fn hit(&self, obj: Object3D, ray: Ray, distance: f32, materials: &Vec<Material>) -> Option<RayHit> {
         match obj {
             Object3D::Sphere {
                 position, radius:_, material_index
@@ -177,8 +175,6 @@ impl Ray {
 
                 let material = materials[material_index];
                 Some(RayHit {
-                    object_index: index,
-                    distance,
                     point: hit_point + position, // translation cancel
                     normal,
                     material,
@@ -197,8 +193,6 @@ impl Ray {
 
                 let material = materials[material_index];
                 Some(RayHit {
-                    object_index: index,
-                    distance,
                     point: hit_point, 
                     normal,
                     material,

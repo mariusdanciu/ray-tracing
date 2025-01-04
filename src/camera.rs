@@ -1,6 +1,6 @@
-use std::time::Instant;
 
-use glam::{mat4, DQuat, Mat4, Quat, Vec2, Vec3, Vec4};
+
+use glam::{Mat4, Vec2, Vec3, Vec4};
 
 #[derive(Debug, Clone)]
 pub struct Camera {
@@ -51,7 +51,6 @@ impl Default for Camera {
     }
 }
 pub enum CameraEvent {
-    Refresh,
     Resize { w: usize, h: usize },
     RotateXY { delta: Vec2 },
     Up,
@@ -102,17 +101,16 @@ impl Camera {
                     Camera::rotate_x_mat(pitch_delta as f32 * std::f32::consts::PI / 180.)
                         * Camera::rotate_y_mat(yaw_delta as f32 * std::f32::consts::PI / 180.);
 
-                let fd = (rotation * Vec4::new(
+                let fd = rotation * Vec4::new(
                     self.forward_direction.x,
                     self.forward_direction.y,
                     self.forward_direction.z,
                     1.
-                ));
+                );
 
                 self.forward_direction = Vec3::new(fd.x, fd.y, fd.z);
 
             }
-            _ => {}
         }
 
         self.view = Mat4::look_at_rh(
@@ -142,7 +140,7 @@ impl Camera {
                 let target = self.inverse_perspective * Vec4::new(p_screen_x, p_screen_y, 1., 1.);
                 let v3 = Vec3::new(target.x, target.y, target.z) / target.w;
                 let ray_direction =
-                    (self.inverse_view * Vec4::new(v3.x, v3.y, v3.z, 0.0));
+                    self.inverse_view * Vec4::new(v3.x, v3.y, v3.z, 0.0);
 
                 self.ray_directions[x + y * self.width as usize] =
                     Vec3::new(ray_direction.x, ray_direction.y, ray_direction.z).normalize();
