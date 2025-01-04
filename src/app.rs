@@ -94,7 +94,7 @@ impl App {
                         }
                         Some(Keycode::D) => {
                             camera.update(CameraEvent::Right);
-                            updated = true;x
+                            updated = true;
                         }
                         _ => {}
                     },
