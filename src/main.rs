@@ -1,6 +1,3 @@
-extern crate sdl2;
-
-use std::num::NonZero;
 
 use app::App;
 use camera::Camera;
@@ -61,8 +58,8 @@ impl Object3D {
     fn material_index(&self) -> usize {
         match self {
             Self::Sphere {
-                position,
-                radius,
+                position: _,
+                radius: _,
                 material_index,
             } => *material_index,
             Self::Triangle {
@@ -158,9 +155,9 @@ impl Ray {
     }
 
     fn reflection_ray(&self, hit: RayHit, roughness: f32, rnd: &mut ThreadRng) -> Ray {
-        let mut direction = self.direction;
+        let mut dir = Vec3::ZERO;
         if roughness < 1. {
-            direction = self
+            dir = self
                 .reflect(
                     hit.normal
                         + roughness
@@ -179,11 +176,11 @@ impl Ray {
             )
             .normalize();
 
-            direction = -(hit.normal + sphere_random).normalize();
+            dir = -(hit.normal + sphere_random).normalize();
         }
         Ray {
             origin: hit.point + hit.normal * 0.0001,
-            direction,
+            direction: dir,
         }
     }
 
@@ -432,9 +429,7 @@ impl Scene {
         texture: &mut Texture,
         camera: &Camera,
         scene: &mut Scene,
-        time_step: f32,
-        updated: bool,
-        rnd: &mut ThreadRng,
+        updated: bool
     ) -> Result<(), String> {
         let w = camera.width;
         let h = camera.height;
@@ -570,5 +565,5 @@ pub fn main() -> Result<(), String> {
             },
         ],
     };
-    App::run(&mut scene2, Scene::render_par)
+    App::run(&mut scene1, Scene::render_par)
 }

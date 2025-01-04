@@ -1,26 +1,17 @@
-use std::borrow::BorrowMut;
-use std::time::{Duration, Instant};
-
-use crate::camera::{self, Camera, CameraEvent};
-use fontdue_sdl2::fontdue::layout::{CoordinateSystem, Layout, TextStyle};
-use fontdue_sdl2::fontdue::Font;
-use fontdue_sdl2::FontTexture;
 use glam::Vec2;
-use rand::{rngs::ThreadRng, Rng, RngCore};
 use sdl2::event::{Event, WindowEvent};
 use sdl2::keyboard::Keycode;
-use sdl2::pixels::{Color, PixelFormatEnum};
-use sdl2::rect::Rect;
-use sdl2::render::{Canvas, Texture, TextureCreator};
-use sdl2::timer::Timer;
-use sdl2::video::{Window, WindowContext};
+use sdl2::pixels::PixelFormatEnum;
+use sdl2::render::Texture;
+use std::time::Instant;
 
+use crate::camera::{Camera, CameraEvent};
 pub struct App {}
 
 impl App {
     pub fn run<T>(
         state: &mut T,
-        renderer: impl Fn(&mut Texture, &Camera, &mut T, f32, bool, &mut ThreadRng) -> Result<(), String>,
+        renderer: impl Fn(&mut Texture, &Camera, &mut T, bool) -> Result<(), String>,
     ) -> Result<(), String> {
         let sdl_context = sdl2::init()?;
 
@@ -59,21 +50,18 @@ impl App {
         let mut delta: f64 = 0.;
         let mut ups = 0u32;
         let mut fps = 0u32;
-        let mut time_step = 0.333;
 
         camera.update(
             CameraEvent::Resize {
                 w: size.0 as usize,
                 h: size.1 as usize,
-            },
-            time_step,
+            }
         );
 
         let mut last_mouse_pos = Vec2::new(0., 0.);
         let mut mouse_pressed = false;
         let mut updated = true;
 
-        let mut rnd = rand::thread_rng();
         'running: loop {
             for event in event_pump.poll_iter() {
                 match event {
@@ -84,37 +72,37 @@ impl App {
                     } => break 'running,
 
                     Event::KeyDown {
-                        timestamp,
-                        window_id,
+                        timestamp: _,
+                        window_id: _,
                         keycode,
-                        scancode,
-                        keymod,
-                        repeat,
+                        scancode: _,
+                        keymod: _,
+                        repeat: _,
                     } => match keycode {
                         Some(Keycode::Up) => {
-                            camera.update(CameraEvent::Up, time_step);
+                            camera.update(CameraEvent::Up);
                             updated = true;
                         }
                         Some(Keycode::Down) => {
-                            camera.update(CameraEvent::Down, time_step);
+                            camera.update(CameraEvent::Down);
                             updated = true;
                         }
                         Some(Keycode::Left) => {
-                            camera.update(CameraEvent::Left, time_step);
+                            camera.update(CameraEvent::Left);
                             updated = true;
                         }
                         Some(Keycode::Right) => {
-                            camera.update(CameraEvent::Right, time_step);
+                            camera.update(CameraEvent::Right);
                             updated = true;
                         }
                         _ => {}
                     },
                     Event::MouseButtonDown {
-                        timestamp,
-                        window_id,
-                        which,
-                        mouse_btn,
-                        clicks,
+                        timestamp: _,
+                        window_id: _,
+                        which: _,
+                        mouse_btn: _,
+                        clicks: _,
                         x,
                         y,
                     } => {
@@ -123,27 +111,21 @@ impl App {
                         sdl_context.mouse().show_cursor(false);
                     }
                     Event::MouseButtonUp {
-                        timestamp,
-                        window_id,
-                        which,
-                        mouse_btn,
-                        clicks,
-                        x,
-                        y,
+                        ..
                     } => {
                         mouse_pressed = false;
                         sdl_context.mouse().show_cursor(true);
                     }
 
                     Event::MouseMotion {
-                        timestamp,
-                        window_id,
-                        which,
-                        mousestate,
+                        timestamp: _,
+                        window_id: _,
+                        which: _,
+                        mousestate: _,
                         x,
                         y,
-                        xrel,
-                        yrel,
+                        xrel: _,
+                        yrel: _,
                     } => {
                         if mouse_pressed {
                             let mouse_pos = Vec2::new(x as f32, y as f32);
@@ -152,15 +134,14 @@ impl App {
 
                             last_mouse_pos = mouse_pos;
                             if delta.x != 0.0 || delta.y != 0.0 {
-                                camera.update(CameraEvent::RotateXY { delta }, time_step);
+                                camera.update(CameraEvent::RotateXY { delta });
                                 updated = true;
                             }
                         }
-                        //println!("{:?} || {}, {}", mousestate, x, y);
                     }
                     Event::Window {
-                        timestamp,
-                        window_id,
+                        timestamp: _,
+                        window_id: _,
                         win_event,
                     } => match win_event {
                         WindowEvent::SizeChanged(w, h) => {
@@ -177,7 +158,6 @@ impl App {
             }
 
             let elapsed = frame_time.elapsed().as_nanos() as f64;
-            time_step = elapsed.min(0.0333f64) as f32;
 
             frame_time = Instant::now();
 
@@ -196,8 +176,7 @@ impl App {
                     CameraEvent::Resize {
                         w: w as usize,
                         h: h as usize,
-                    },
-                    time_step,
+                    }
                 );
 
                 texture = texture_creator
@@ -208,7 +187,7 @@ impl App {
             }
 
             canvas.clear();
-            renderer(&mut texture, &camera, state, time_step, updated, &mut rnd)?;
+            renderer(&mut texture, &camera, state, updated)?;
             canvas.copy(&texture, None, None)?;
             canvas.present();
 

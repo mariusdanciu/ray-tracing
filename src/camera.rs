@@ -76,7 +76,7 @@ impl Camera {
         Mat4::from_cols_array(&[1., 0., 0., 0., 0., c, -s, 0., 0., s, c, 0., 0., 0., 0., 1.])
     }
 
-    pub fn update(&mut self, event: CameraEvent, time_step: f32) {
+    pub fn update(&mut self, event: CameraEvent) {
         let right_direction = self.forward_direction.cross(self.up).normalize();
         let speed = 0.2;
         let rotation_speed = 4.;
