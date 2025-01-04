@@ -80,21 +80,21 @@ impl App {
                         keymod: _,
                         repeat: _,
                     } => match keycode {
-                        Some(Keycode::Up) => {
+                        Some(Keycode::W) => {
                             camera.update(CameraEvent::Up);
                             updated = true;
                         }
-                        Some(Keycode::Down) => {
+                        Some(Keycode::S) => {
                             camera.update(CameraEvent::Down);
                             updated = true;
                         }
-                        Some(Keycode::Left) => {
+                        Some(Keycode::A) => {
                             camera.update(CameraEvent::Left);
                             updated = true;
                         }
-                        Some(Keycode::Right) => {
+                        Some(Keycode::D) => {
                             camera.update(CameraEvent::Right);
-                            updated = true;
+                            updated = true;x
                         }
                         _ => {}
                     },

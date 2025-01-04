@@ -97,6 +97,6 @@ pub fn main() -> Result<(), String> {
         ],
     };
 
-    let mut renderer = renderer::Renderer::new(Arc::new(scene2));
+    let mut renderer = renderer::Renderer::new(Arc::new(scene1));
     App::run(&mut renderer)
 }

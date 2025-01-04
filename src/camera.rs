@@ -77,7 +77,7 @@ impl Camera {
     }
 
     pub fn update(&mut self, event: CameraEvent) {
-        let right_direction = self.forward_direction.cross(self.up).normalize();
+        let right_direction = self.forward_direction.cross(self.up);
         let speed = 0.2;
         let rotation_speed = 4.;
         match event {
@@ -107,11 +107,10 @@ impl Camera {
                     self.forward_direction.y,
                     self.forward_direction.z,
                     1.
-                )).normalize();
+                ));
 
                 self.forward_direction = Vec3::new(fd.x, fd.y, fd.z);
 
-                //println!("new forward {:?}",self.forward_direction);
             }
             _ => {}
         }
