@@ -1,19 +1,19 @@
 use std::sync::Arc;
 
 use app::App;
+use camera::Camera;
 use glam::{vec3, Vec3};
 use objects::{Cuboid, Material, MaterialType, Object3D};
-use scene::{Scene};
+use scene::Scene;
 
 mod app;
 mod camera;
+mod objects;
 mod ray;
 mod renderer;
 mod scene;
-mod objects;
 
 pub fn main() -> Result<(), String> {
-
     let cube = Cuboid {
         center: Vec3::new(-0.9, 0., -1.3),
         length: 1.0,
@@ -120,5 +120,9 @@ pub fn main() -> Result<(), String> {
     };
 
     let mut renderer = renderer::Renderer::new(Arc::new(scene1));
-    App::run(&mut renderer)
+    let mut camera = Camera::new_with_pos(
+        Vec3::new(-2.8777819, 1.3294921, 2.0364523),
+        Vec3::new(0.6106094, -0.19236837, -0.76821935),
+    );
+    App::run(&mut camera, &mut renderer)
 }

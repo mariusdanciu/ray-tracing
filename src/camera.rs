@@ -19,11 +19,8 @@ pub struct Camera {
 
 impl Default for Camera {
     fn default() -> Self {
-        //let pos = Vec3::new(0.0, 0.0, 3.);
-        //let dir = Vec3::new(0.0, 0.0, -1.);
-
-        let pos = Vec3::new(-2.8777819, 1.3294921, 2.0364523);
-        let dir = Vec3::new(0.6106094, -0.19236837, -0.76821935);
+        let pos = Vec3::new(0.0, 0.0, 3.);
+        let dir = Vec3::new(0.0, 0.0, -1.);
 
         let up = Vec3::new(0., 1., 0.);
         let fov: f32 = 45.0;
@@ -66,6 +63,15 @@ impl Camera {
             ..Default::default()
         }
     }
+
+    pub fn new_with_pos(position: Vec3, look_at: Vec3) -> Camera {
+        Camera {
+            position,
+            forward_direction: look_at,
+            ..Default::default()
+        }
+    }
+
     pub fn rotate_y_mat(o: f32) -> Mat4 {
         let (s, c) = f32::sin_cos(o);
         Mat4::from_cols_array(&[c, 0., s, 0., 0., 1., 0., 0., -s, 0., c, 0., 0., 0., 0., 1.])

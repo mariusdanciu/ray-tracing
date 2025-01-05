@@ -10,9 +10,7 @@ use crate::renderer::Renderer;
 pub struct App {}
 
 impl App {
-    pub fn run(
-        renderer: &mut Renderer,
-    ) -> Result<(), String> {
+    pub fn run(camera: &mut Camera, renderer: &mut Renderer) -> Result<(), String> {
         let sdl_context = sdl2::init()?;
 
         let video_subsystem = sdl_context.video()?;
@@ -41,8 +39,6 @@ impl App {
         let mut event_pump = sdl_context.event_pump()?;
         let mut changed: Option<(usize, usize)> = None;
 
-        let mut camera = Camera::new();
-
         let mut frame_time = Instant::now();
         let mut timer = Instant::now();
 
@@ -51,12 +47,10 @@ impl App {
         let mut ups = 0u32;
         let mut fps = 0u32;
 
-        camera.update(
-            CameraEvent::Resize {
-                w: size.0 as usize,
-                h: size.1 as usize,
-            }
-        );
+        camera.update(CameraEvent::Resize {
+            w: size.0 as usize,
+            h: size.1 as usize,
+        });
 
         let mut last_mouse_pos = Vec2::new(0., 0.);
         let mut mouse_pressed = false;
@@ -110,9 +104,7 @@ impl App {
                         last_mouse_pos = Vec2::new(x as f32, y as f32);
                         sdl_context.mouse().show_cursor(false);
                     }
-                    Event::MouseButtonUp {
-                        ..
-                    } => {
+                    Event::MouseButtonUp { .. } => {
                         mouse_pressed = false;
                         sdl_context.mouse().show_cursor(true);
                     }
@@ -172,12 +164,10 @@ impl App {
             if let Some((w, h)) = changed {
                 println!("Resized");
                 updated = true;
-                camera.update(
-                    CameraEvent::Resize {
-                        w: w as usize,
-                        h: h as usize,
-                    }
-                );
+                camera.update(CameraEvent::Resize {
+                    w: w as usize,
+                    h: h as usize,
+                });
 
                 texture = texture_creator
                     .create_texture_streaming(PixelFormatEnum::ABGR8888, w as u32, h as u32)
