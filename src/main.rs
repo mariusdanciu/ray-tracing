@@ -2,36 +2,38 @@ use std::sync::Arc;
 
 use app::App;
 use glam::{vec3, Vec3};
-use scene::{Material, MaterialType, Object3D, Scene};
+use objects::{Cuboid, Material, MaterialType, Object3D};
+use scene::{Scene};
 
 mod app;
 mod camera;
 mod ray;
 mod renderer;
 mod scene;
+mod objects;
 
 pub fn main() -> Result<(), String> {
+
+    let cube = Cuboid {
+        center: Vec3::new(-0.9, 0., -1.3),
+        length: 1.0,
+        width: 1.,
+        depth: 1.,
+    };
+
+    let mut objs = vec![
+        Object3D::new_sphere(Vec3::new(-0.6, -0.0, -0.2), 0.5, 0),
+        Object3D::new_sphere(Vec3::new(0., -100.5, 0.), 100., 2),
+    ];
+
+    objs.append(&mut cube.triangles(1));
+
     let scene1 = Scene {
         max_ray_bounces: 5,
         light_dir: vec3(-1., -1., -1.).normalize(),
-        ambient_color: vec3(0., 0.0, 0.0),
+        ambient_color: vec3(0.1, 0.1, 0.1),
         difuse: false,
-        objects: vec![
-            Object3D::new_sphere(Vec3::new(-0.3, 0.3, -0.5), 0.5, 0),
-            Object3D::new_sphere(Vec3::new(0., -100.5, 0.), 100., 2),
-            Object3D::new_triangle(
-                vec3(-1.5, 1.5, 0.0),
-                vec3(-1.5, -0.5, 0.0),
-                vec3(-0.5, -0.5, -1.5),
-                1,
-            ),
-            Object3D::new_triangle(
-                vec3(-1.5, 1.5, 0.0),
-                vec3(-0.5, -0.5, -1.5),
-                vec3(-0.5, 1.5, -1.5),
-                1,
-            ),
-        ],
+        objects: objs,
         materials: vec![
             Material {
                 albedo: Vec3::new(0.9, 0.1, 0.0),
@@ -44,7 +46,7 @@ pub fn main() -> Result<(), String> {
                 ..Default::default()
             },
             Material {
-                albedo: Vec3::new(0.1, 0.4, 1.0),
+                albedo: Vec3::new(0.2, 0.5, 1.0),
                 kind: MaterialType::Reflective { roughness: 0.1 },
                 ..Default::default()
             },
