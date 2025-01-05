@@ -188,12 +188,11 @@ impl Ray {
             } => {
                 let hit_point = ray.origin + ray.direction * distance;
 
-                let mut normal = (v2 - v1).cross(v3 - v1);
+                let mut normal = (v2 - v1).cross(v3 - v1).normalize();
                 if back_facing {
-                    normal = (v3 - v1).cross(v2 - v1);
+                    normal = -normal; 
                 }
-                normal = normal.normalize();
-                
+
                 let material = materials[material_index];
                 Some(RayHit {
                     point: hit_point,
