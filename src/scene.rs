@@ -119,14 +119,16 @@ impl Scene {
         let mut closest_object = self.objects[0];
         let mut closest_t = f32::MIN;
         let mut closest_index: usize = usize::MAX;
+        let mut back_facing = false;
 
         for (i, obj) in self.objects.iter().enumerate() {
-            if let Some(t) = ray.compute_distance(&ray, &obj) {
+            if let Some((t, bf)) = ray.compute_distance(&ray, &obj) {
                 
                 if t < 0. && t > closest_t {
                     closest_t = t;
                     closest_object = *obj;
                     closest_index = i;
+                    back_facing = bf;
                 }
             }
         }
@@ -135,7 +137,7 @@ impl Scene {
             return None;
         }
 
-        ray.hit(closest_object, ray, closest_t, &self.materials)
+        ray.hit(closest_object, ray, closest_t, &self.materials, back_facing)
     }
 
     fn color(

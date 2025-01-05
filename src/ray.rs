@@ -82,15 +82,17 @@ impl Ray {
         self.transmission(hit, 0.001, refraction_index)
     }
 
-    fn moller_trumbore_intersection(&self, ray: &Ray, v1: Vec3, v2: Vec3, v3: Vec3) -> Option<f32> {
+    fn moller_trumbore_intersection(&self, ray: &Ray, v1: Vec3, v2: Vec3, v3: Vec3) -> Option<(f32, bool)> {
         let e1 = v2 - v1;
         let e2 = v3 - v1;
         let ray_cross_e2 = ray.direction.cross(e2);
         let det = e1.dot(ray_cross_e2);
+        
 
         if det > -f32::EPSILON && det < f32::EPSILON {
             return None; // This ray is parallel to this triangle.
         }
+        let back_facing = det > f32::EPSILON;
 
         let inv_det = 1.0 / det;
         let s = ray.origin - v1;
@@ -110,13 +112,13 @@ impl Ray {
         let t = inv_det * e2.dot(s_cross_e1);
 
         if t < f32::EPSILON {
-            return Some(t);
+            return Some((t, back_facing));
         } else {
             // This means that there is a line intersection but not a ray intersection.
             return None;
         }
     }
-    pub fn compute_distance(&self, ray: &Ray, obj: &Object3D) -> Option<f32> {
+    pub fn compute_distance(&self, ray: &Ray, obj: &Object3D) -> Option<(f32, bool)> {
         match obj {
             Object3D::Sphere {
                 position, radius, ..
@@ -143,7 +145,7 @@ impl Ray {
                 // closest to ray origin
                 let t = (-b + disc.sqrt()) / (2.0 * a);
 
-                Some(t)
+                Some((t, false))
             }
 
             Object3D::Triangle { v1, v2, v3, .. } => {
@@ -158,6 +160,7 @@ impl Ray {
         ray: Ray,
         distance: f32,
         materials: &Vec<Material>,
+        back_facing: bool
     ) -> Option<RayHit> {
         match obj {
             Object3D::Sphere {
@@ -185,8 +188,12 @@ impl Ray {
             } => {
                 let hit_point = ray.origin + ray.direction * distance;
 
-                let normal = (v2 - v1).cross(v3 - v1).normalize();
-
+                let mut normal = (v2 - v1).cross(v3 - v1);
+                if back_facing {
+                    normal = (v3 - v1).cross(v2 - v1);
+                }
+                normal = normal.normalize();
+                
                 let material = materials[material_index];
                 Some(RayHit {
                     point: hit_point,

@@ -78,13 +78,13 @@ pub fn main() -> Result<(), String> {
             Material {
                 albedo: Vec3::new(0.3, 0.0, 1.0),
                 kind: MaterialType::Reflective { roughness: 1.0 },
-                emission_power: 1.8,
+                emission_power: 2.,
                 ..Default::default()
             },
             Material {
                 albedo: Vec3::new(0.9, 0.9, 0.2),
                 kind: MaterialType::Reflective { roughness: 1.0 },
-                emission_power: 0.2,
+                emission_power: 0.3,
                 ..Default::default()
             },
             Material {
@@ -111,6 +111,6 @@ pub fn main() -> Result<(), String> {
         ],
     };
 
-    let mut renderer = renderer::Renderer::new(Arc::new(scene2));
+    let mut renderer = renderer::Renderer::new(Arc::new(scene1));
     App::run(&mut renderer)
 }
