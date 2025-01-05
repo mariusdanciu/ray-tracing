@@ -22,6 +22,7 @@ pub fn main() -> Result<(), String> {
     };
 
     let mut objs = vec![
+        Object3D::new_sphere(Vec3::new(-0.9, 0.7, -1.3), 0.2, 3),
         Object3D::new_sphere(Vec3::new(-0.6, -0.0, -0.2), 0.5, 0),
         Object3D::new_sphere(Vec3::new(0., -100.5, 0.), 100., 2),
     ];
@@ -48,6 +49,11 @@ pub fn main() -> Result<(), String> {
             Material {
                 albedo: Vec3::new(0.2, 0.5, 1.0),
                 kind: MaterialType::Reflective { roughness: 0.1 },
+                ..Default::default()
+            },
+            Material {
+                albedo: Vec3::new(0.9, 0.8, 0.0),
+                kind: MaterialType::Reflective { roughness: 1.0 },
                 ..Default::default()
             },
         ],

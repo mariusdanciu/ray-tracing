@@ -1,5 +1,3 @@
-
-
 use glam::{Mat4, Vec2, Vec3, Vec4};
 
 #[derive(Debug, Clone)]
@@ -21,8 +19,11 @@ pub struct Camera {
 
 impl Default for Camera {
     fn default() -> Self {
-        let pos = Vec3::new(0.0, 0.0, 3.);
-        let dir = Vec3::new(0.0, 0.0, -1.);
+        //let pos = Vec3::new(0.0, 0.0, 3.);
+        //let dir = Vec3::new(0.0, 0.0, -1.);
+
+        let pos = Vec3::new(-2.8777819, 1.3294921, 2.0364523);
+        let dir = Vec3::new(0.6106094, -0.19236837, -0.76821935);
 
         let up = Vec3::new(0., 1., 0.);
         let fov: f32 = 45.0;
@@ -93,7 +94,6 @@ impl Camera {
             }
 
             CameraEvent::RotateXY { delta } => {
-
                 let pitch_delta = delta.y * rotation_speed;
                 let yaw_delta = delta.x * rotation_speed;
 
@@ -101,17 +101,19 @@ impl Camera {
                     Camera::rotate_x_mat(pitch_delta as f32 * std::f32::consts::PI / 180.)
                         * Camera::rotate_y_mat(yaw_delta as f32 * std::f32::consts::PI / 180.);
 
-                let fd = rotation * Vec4::new(
-                    self.forward_direction.x,
-                    self.forward_direction.y,
-                    self.forward_direction.z,
-                    1.
-                );
+                let fd = rotation
+                    * Vec4::new(
+                        self.forward_direction.x,
+                        self.forward_direction.y,
+                        self.forward_direction.z,
+                        1.,
+                    );
 
                 self.forward_direction = Vec3::new(fd.x, fd.y, fd.z);
-
             }
         }
+        println!("Position {}", self.position);
+        println!("Look at {}", self.forward_direction);
 
         self.view = Mat4::look_at_rh(
             self.position,
@@ -139,8 +141,7 @@ impl Camera {
 
                 let target = self.inverse_perspective * Vec4::new(p_screen_x, p_screen_y, 1., 1.);
                 let v3 = Vec3::new(target.x, target.y, target.z) / target.w;
-                let ray_direction =
-                    self.inverse_view * Vec4::new(v3.x, v3.y, v3.z, 0.0);
+                let ray_direction = self.inverse_view * Vec4::new(v3.x, v3.y, v3.z, 0.0);
 
                 self.ray_directions[x + y * self.width as usize] =
                     Vec3::new(ray_direction.x, ray_direction.y, ray_direction.z).normalize();
@@ -152,4 +153,3 @@ impl Camera {
         }
     }
 }
-
