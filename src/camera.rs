@@ -118,8 +118,6 @@ impl Camera {
                 self.forward_direction = Vec3::new(fd.x, fd.y, fd.z);
             }
         }
-        println!("Position {}", self.position);
-        println!("Look at {}", self.forward_direction);
 
         self.view = Mat4::look_at_rh(
             self.position,

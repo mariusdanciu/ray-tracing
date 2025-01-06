@@ -1,23 +1,55 @@
-use glam::{Vec3, Vec4};
+use std::sync::Arc;
+
+use glam::{vec3, Vec3, Vec4};
 
 use glam::vec4;
 use rand::rngs::ThreadRng;
 
-use crate::objects::{Material, MaterialType, Object3D};
+use crate::objects::{Material, MaterialType, Object3D, Texture};
 use crate::ray::{Ray, RayHit};
+
+pub trait TextureLoader {
+    fn color(&self, u: f32, v: f32) -> Vec4;
+}
 
 pub struct Scene {
     pub light_dir: Vec3,
     pub ambient_color: Vec3,
     pub objects: Vec<Object3D>,
     pub materials: Vec<Material>,
+    pub textures: Vec<Texture>,
     pub difuse: bool,
     pub max_ray_bounces: u8,
 }
 
-
+impl Default for Scene {
+    fn default() -> Self {
+        Self {
+            light_dir: Default::default(),
+            ambient_color: Default::default(),
+            objects: Default::default(),
+            materials: Default::default(),
+            textures: Default::default(),
+            difuse: Default::default(),
+            max_ray_bounces: Default::default(),
+        }
+    }
+}
 
 impl Scene {
+    pub fn new(objects: Vec<Object3D>, materials: Vec<Material>) -> Scene {
+        Scene {
+            light_dir: vec3(-1., -1., -1.).normalize(),
+            ambient_color: vec3(0.1, 0.1, 0.1),
+            objects,
+            materials,
+            textures: vec![],
+            difuse: false,
+            max_ray_bounces: 5,
+            ..Default::default()
+        }
+    }
+
     pub fn to_rgba(c: Vec4) -> (u8, u8, u8, u8) {
         (
             (c.x * 255.) as u8,
@@ -26,8 +58,8 @@ impl Scene {
             (c.w + 255.) as u8,
         )
     }
- 
-    fn trace_ray(& self, ray: Ray) -> Option<RayHit> {
+
+    fn trace_ray(&self, ray: Ray) -> Option<RayHit> {
         if self.objects.is_empty() {
             return None;
         }
@@ -39,7 +71,6 @@ impl Scene {
 
         for (i, obj) in self.objects.iter().enumerate() {
             if let Some((t, bf)) = ray.compute_distance(&ray, &obj) {
-                
                 if t < 0. && t > closest_t {
                     closest_t = t;
                     closest_object = *obj;
@@ -125,7 +156,7 @@ impl Scene {
         }
     }
 
-    pub fn pixel(& self, ray: Ray, rnd: &mut ThreadRng) -> Vec4 {
+    pub fn pixel(&self, ray: Ray, rnd: &mut ThreadRng) -> Vec4 {
         let mut light = Vec3::ZERO; // BLACK
 
         let contribution = Vec3::ONE;
@@ -134,5 +165,4 @@ impl Scene {
 
         vec4(light.x, light.y, light.z, 1.)
     }
-
 }

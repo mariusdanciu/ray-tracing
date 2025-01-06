@@ -209,9 +209,23 @@ impl Cuboid {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct Texture {
+    pub path: String
+}
+
+impl Texture {
+    pub fn new(path: impl Into<String>) -> Texture {
+        Texture {
+            path: path.into()
+        }
+    }
+}
+
 #[derive(Debug, Copy, Clone)]
 pub struct Material {
     pub albedo: Vec3,
+    pub texture: Option<usize>,
     pub kind: MaterialType,
     pub emission_power: f32,
 }
@@ -220,6 +234,7 @@ impl Default for Material {
     fn default() -> Self {
         Self {
             albedo: Vec3::ZERO,
+            texture: None,
             kind: MaterialType::Reflective { roughness: 1.0 },
             emission_power: 0.0,
         }

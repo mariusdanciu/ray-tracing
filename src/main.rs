@@ -12,6 +12,7 @@ mod objects;
 mod ray;
 mod renderer;
 mod scene;
+mod utils;
 
 pub fn main() -> Result<(), String> {
     let cube = Cuboid {
@@ -29,13 +30,9 @@ pub fn main() -> Result<(), String> {
 
     objs.append(&mut cube.triangles(1));
 
-    let scene1 = Scene {
-        max_ray_bounces: 5,
-        light_dir: vec3(-1., -1., -1.).normalize(),
-        ambient_color: vec3(0.1, 0.1, 0.1),
-        difuse: false,
-        objects: objs,
-        materials: vec![
+    let scene1 = Scene::new(
+        objs,
+        vec![
             Material {
                 albedo: Vec3::new(0.9, 0.1, 0.0),
                 kind: MaterialType::Reflective { roughness: 1.0 },
@@ -57,7 +54,7 @@ pub fn main() -> Result<(), String> {
                 ..Default::default()
             },
         ],
-    };
+    );
 
     let scene2 = Scene {
         max_ray_bounces: 5,
@@ -117,6 +114,7 @@ pub fn main() -> Result<(), String> {
                 ..Default::default()
             },
         ],
+        ..Default::default()
     };
 
     let mut renderer = renderer::Renderer::new(Arc::new(scene1));
