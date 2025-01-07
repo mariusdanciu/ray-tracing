@@ -80,6 +80,10 @@ impl Renderer {
             self.frame_index = 1;
         }
 
+        if self.frame_index > self.scene.max_frames_rendering {
+            return Ok(())
+        }
+
         let num_chunks = 10;
         let mut img: Vec<u8> = vec![0; w * h * 4];
 

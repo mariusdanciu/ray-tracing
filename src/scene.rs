@@ -20,6 +20,7 @@ pub struct Scene {
     pub textures: Vec<Texture>,
     pub difuse: bool,
     pub max_ray_bounces: u8,
+    pub max_frames_rendering: u32
 }
 
 impl Default for Scene {
@@ -32,6 +33,7 @@ impl Default for Scene {
             textures: Default::default(),
             difuse: Default::default(),
             max_ray_bounces: Default::default(),
+            max_frames_rendering: 1000
         }
     }
 }
