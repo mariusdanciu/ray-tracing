@@ -8,10 +8,7 @@ use rand::rngs::ThreadRng;
 use crate::objects::{Material, MaterialType, Object3D, Texture};
 use crate::ray::{Ray, RayHit};
 
-pub trait TextureLoader {
-    fn color(&self, u: f32, v: f32) -> Vec4;
-}
-
+#[derive(Clone)]
 pub struct Scene {
     pub light_dir: Vec3,
     pub ambient_color: Vec3,
@@ -20,7 +17,7 @@ pub struct Scene {
     pub textures: Vec<Texture>,
     pub difuse: bool,
     pub max_ray_bounces: u8,
-    pub max_frames_rendering: u32
+    pub max_frames_rendering: u32,
 }
 
 impl Default for Scene {
@@ -33,7 +30,7 @@ impl Default for Scene {
             textures: Default::default(),
             difuse: Default::default(),
             max_ray_bounces: Default::default(),
-            max_frames_rendering: 1000
+            max_frames_rendering: 1000,
         }
     }
 }
@@ -61,32 +58,37 @@ impl Scene {
         )
     }
 
+    pub fn with_texture(&self, texture: Texture) -> Scene {
+        let mut s = self.clone();
+        s.textures.push(texture);
+        s
+    }
+
+    pub fn with_textures(&self, mut textures: Vec<Texture>) -> Scene {
+        let mut s = self.clone();
+        s.textures.append(&mut textures);
+        s
+    }
+
     fn trace_ray(&self, ray: Ray) -> Option<RayHit> {
         if self.objects.is_empty() {
             return None;
         }
 
-        let mut closest_object = self.objects[0];
         let mut closest_t = f32::MIN;
-        let mut closest_index: usize = usize::MAX;
-        let mut back_facing = false;
 
-        for (i, obj) in self.objects.iter().enumerate() {
-            if let Some((t, bf)) = ray.compute_distance(&ray, &obj) {
-                if t < 0. && t > closest_t {
-                    closest_t = t;
-                    closest_object = *obj;
-                    closest_index = i;
-                    back_facing = bf;
+        let mut closest_hit: Option<RayHit> = None;
+
+        for obj in self.objects.iter() {
+            if let Some(t) = ray.hit(&obj) {
+                if t.distance < 0. && t.distance > closest_t {
+                    closest_hit = Some(t);
+                    closest_t = t.distance;
                 }
             }
         }
 
-        if closest_index == usize::MAX {
-            return None;
-        }
-
-        ray.hit(closest_object, ray, closest_t, &self.materials, back_facing)
+        closest_hit
     }
 
     fn color(
@@ -101,27 +103,25 @@ impl Scene {
             return light;
         }
         if let Some(hit) = self.trace_ray(ray) {
-            match hit.material.kind {
+            let material = self.materials[hit.material_index];
+            match material.kind {
                 MaterialType::Reflective { roughness } => {
                     let mut ll = light;
                     if !self.difuse {
                         let light_angle = hit.normal.dot(-self.light_dir).max(0.0);
-                        ll += hit.material.albedo * light_angle;
+                        ll += material.albedo * light_angle;
                     } else {
-                        ll += hit.material.albedo * hit.material.emission_power;
+                        ll += material.albedo * material.emission_power;
                     }
                     let r = ray.reflection_ray(hit, roughness, rnd);
-                    self.color(r, rnd, depth + 1, ll, contribution * hit.material.albedo)
+                    self.color(r, rnd, depth + 1, ll, contribution * material.albedo)
                 }
                 MaterialType::Refractive {
                     transparency,
                     refraction_index,
                 } => {
                     let mut refraction_color = Vec3::ZERO;
-                    let kr = hit
-                        .material
-                        .fresnel(ray.direction, hit.normal, refraction_index)
-                        as f32;
+                    let kr = material.fresnel(ray.direction, hit.normal, refraction_index) as f32;
 
                     if kr < 1.0 {
                         if let Some(refraction_ray) = ray.refraction_ray(hit, refraction_index) {
@@ -129,8 +129,8 @@ impl Scene {
                                 refraction_ray,
                                 rnd,
                                 depth + 1,
-                                light + hit.material.albedo * hit.material.emission_power,
-                                contribution * hit.material.albedo,
+                                light + material.albedo * material.emission_power,
+                                contribution * material.albedo,
                             );
                         }
                     }
@@ -144,12 +144,12 @@ impl Scene {
                         reflection_ray,
                         rnd,
                         depth + 1,
-                        light + hit.material.albedo * hit.material.emission_power,
-                        contribution * hit.material.albedo,
+                        light + material.albedo * material.emission_power,
+                        contribution * material.albedo,
                     );
 
                     let mut color = reflection_color * kr + refraction_color * (1.0 - kr);
-                    color = color * transparency * hit.material.albedo;
+                    color = color * transparency * material.albedo;
                     color
                 }
             }

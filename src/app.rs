@@ -3,22 +3,23 @@ use sdl2::event::{Event, WindowEvent};
 
 use sdl2::keyboard::Keycode;
 use sdl2::pixels::PixelFormatEnum;
+use sdl2::video::WindowBuildError;
+use sdl2::IntegerOrSdlError;
 
+use std::sync::Arc;
 use std::time::Instant;
 
 use crate::camera::{Camera, CameraEvent};
 
+use crate::objects::Texture;
 use crate::renderer::Renderer;
+use crate::utils::errors::AppError;
 use crate::utils::image::ImageUtils;
-
-
 
 pub struct App {}
 
 impl App {
-
-
-    pub fn run(camera: &mut Camera, renderer: &mut Renderer) -> Result<(), String> {
+    pub fn run(camera: &mut Camera, renderer: &mut Renderer) -> Result<(), AppError> {
         let sdl_context = sdl2::init()?;
 
         let video_subsystem = sdl_context.video()?;
@@ -37,15 +38,6 @@ impl App {
             .map_err(|e| e.to_string())?;
 
         let texture_creator = canvas.texture_creator();
-
-        //let bytes = ImageReader::open("")?.decode()?.as_bytes();
-
-        let sdlt: Vec<Vec<u8>> = renderer
-            .scene
-            .textures
-            .iter()
-            .flat_map(|t| ImageUtils::load_image(t.path.as_str()))
-            .collect();
 
         let size = canvas.output_size().unwrap();
 

@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{borrow::BorrowMut, cell::Cell, sync::Arc};
 
 use glam::Vec4;
 use rand::rngs::ThreadRng;
@@ -22,9 +22,9 @@ pub struct Renderer {
 }
 
 impl Renderer {
-    pub fn new(scene: Arc<Scene>) -> Renderer {
+    pub fn new(scene: Scene) -> Renderer {
         Renderer{
-            scene,
+            scene: Arc::new(scene),
             accumulated: vec![],
             frame_index: 1,
         }

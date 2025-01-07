@@ -3,7 +3,6 @@ use rand::{rngs::ThreadRng, Rng};
 
 use crate::objects::{Material, Object3D};
 
-
 #[derive(Debug, Copy, Clone)]
 pub struct Ray {
     pub origin: Vec3,
@@ -12,9 +11,21 @@ pub struct Ray {
 
 #[derive(Debug, Copy, Clone)]
 pub struct RayHit {
+    pub distance: f32,
     pub point: Vec3,
     pub normal: Vec3,
-    pub material: Material,
+    pub material_index: usize,
+}
+
+impl Default for RayHit {
+    fn default() -> Self {
+        Self {
+            distance: f32::MIN,
+            point: Default::default(),
+            normal: Default::default(),
+            material_index: Default::default(),
+        }
+    }
 }
 
 impl Ray {
@@ -83,12 +94,17 @@ impl Ray {
         self.transmission(hit, 0.001, refraction_index)
     }
 
-    fn moller_trumbore_intersection(&self, ray: &Ray, v1: Vec3, v2: Vec3, v3: Vec3) -> Option<(f32, bool)> {
+    fn moller_trumbore_intersection(
+        &self,
+        v1: Vec3,
+        v2: Vec3,
+        v3: Vec3,
+        material_index: usize,
+    ) -> Option<RayHit> {
         let e1 = v2 - v1;
         let e2 = v3 - v1;
-        let ray_cross_e2 = ray.direction.cross(e2);
+        let ray_cross_e2 = self.direction.cross(e2);
         let det = e1.dot(ray_cross_e2);
-        
 
         if det > -f32::EPSILON && det < f32::EPSILON {
             return None; // This ray is parallel to this triangle.
@@ -96,7 +112,7 @@ impl Ray {
         let back_facing = det > f32::EPSILON;
 
         let inv_det = 1.0 / det;
-        let s = ray.origin - v1;
+        let s = self.origin - v1;
         let u = inv_det * s.dot(ray_cross_e2);
         if u < 0.0 || u > 1.0 {
             return None;
@@ -104,7 +120,7 @@ impl Ray {
 
         let s_cross_e1 = s.cross(e1);
 
-        let v = inv_det * ray.direction.dot(s_cross_e1);
+        let v = inv_det * self.direction.dot(s_cross_e1);
         if v < 0.0 || u + v > 1.0 {
             return None;
         }
@@ -113,94 +129,80 @@ impl Ray {
         let t = inv_det * e2.dot(s_cross_e1);
 
         if t < f32::EPSILON {
-            return Some((t, back_facing));
+            let hit_point = self.origin + self.direction * t;
+
+            let mut normal = (v2 - v1).cross(v3 - v1).normalize();
+            if back_facing {
+                normal = -normal;
+            }
+
+            return Some(RayHit {
+                distance: t,
+                point: hit_point,
+                normal,
+                material_index,
+            });
         } else {
             // This means that there is a line intersection but not a ray intersection.
             return None;
         }
     }
-    pub fn compute_distance(&self, ray: &Ray, obj: &Object3D) -> Option<(f32, bool)> {
-        match obj {
-            Object3D::Sphere {
-                position, radius, ..
-            } => {
-                // (bx^2 + by^2 + bz^2)t^2 + (2(axbx + ayby + azbz))t + (ax^2 + ay^2 + az^2 - r^2) = 0
-                // where
-                // a = ray origin
-                // b = ray direction
-                // r = radius
-                // t = hit distance
 
-                let origin = ray.origin - *position;
-
-                let a = ray.direction.dot(ray.direction);
-                let b = 2. * origin.dot(ray.direction);
-                let c = origin.dot(origin) - radius * radius;
-
-                let disc = b * b - 4. * a * c;
-
-                if disc < 0.0 {
-                    return None;
-                }
-
-                // closest to ray origin
-                let t = (-b + disc.sqrt()) / (2.0 * a);
-
-                Some((t, false))
-            }
-
-            Object3D::Triangle { v1, v2, v3, .. } => {
-                self.moller_trumbore_intersection(ray, *v1, *v2, *v3)
-            }
-        }
-    }
-
-    pub fn hit(
-        &self,
-        obj: Object3D,
-        ray: Ray,
-        distance: f32,
-        materials: &Vec<Material>,
-        back_facing: bool
-    ) -> Option<RayHit> {
+    pub fn hit(&self, obj: &Object3D) -> Option<RayHit> {
         match obj {
             Object3D::Sphere {
                 position,
-                radius: _,
+                radius,
                 material_index,
-            } => {
-                let origin = ray.origin - position; // translation
-                let hit_point = origin + ray.direction * distance;
+            } => self.sphere_intersection(position, radius, *material_index),
 
-                let normal = hit_point.normalize();
-
-                let material = materials[material_index];
-                Some(RayHit {
-                    point: hit_point + position, // translation cancel
-                    normal,
-                    material,
-                })
-            }
             Object3D::Triangle {
                 v1,
                 v2,
                 v3,
                 material_index,
-            } => {
-                let hit_point = ray.origin + ray.direction * distance;
-
-                let mut normal = (v2 - v1).cross(v3 - v1).normalize();
-                if back_facing {
-                    normal = -normal; 
-                }
-
-                let material = materials[material_index];
-                Some(RayHit {
-                    point: hit_point,
-                    normal,
-                    material,
-                })
-            }
+            } => self.moller_trumbore_intersection(*v1, *v2, *v3, *material_index),
         }
+    }
+
+    fn sphere_intersection(
+        &self,
+        position: &Vec3,
+        radius: &f32,
+        material_index: usize,
+    ) -> Option<RayHit> {
+        // (bx^2 + by^2 + bz^2)t^2 + (2(axbx + ayby + azbz))t + (ax^2 + ay^2 + az^2 - r^2) = 0
+        // where
+        // a = ray origin
+        // b = ray direction
+        // r = radius
+        // t = hit distance
+
+        let origin = self.origin - *position;
+
+        let a = self.direction.dot(self.direction);
+        let b = 2. * origin.dot(self.direction);
+        let c = origin.dot(origin) - radius * radius;
+
+        let disc = b * b - 4. * a * c;
+
+        if disc < 0.0 {
+            return None;
+        }
+
+        // closest to ray origin
+        let t = (-b + disc.sqrt()) / (2.0 * a);
+
+        let origin = self.origin - *position; // translation
+        let hit_point = origin + self.direction * t;
+
+        let normal = hit_point.normalize();
+
+        Some(RayHit {
+            distance: t,
+            point: hit_point + *position, // translation cancel
+            normal,
+            material_index,
+        })
     }
 }

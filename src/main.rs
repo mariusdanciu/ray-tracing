@@ -5,6 +5,7 @@ use camera::Camera;
 use glam::{vec3, Vec3};
 use objects::{Cuboid, Material, MaterialType, Object3D};
 use scene::Scene;
+use utils::{errors::AppError, image::ImageUtils};
 
 mod app;
 mod camera;
@@ -14,7 +15,7 @@ mod renderer;
 mod scene;
 mod utils;
 
-pub fn main() -> Result<(), String> {
+pub fn main() -> Result<(), AppError> {
     let cube = Cuboid {
         center: Vec3::new(-0.9, 0., -1.3),
         length: 1.0,
@@ -30,7 +31,7 @@ pub fn main() -> Result<(), String> {
 
     objs.append(&mut cube.triangles(1));
 
-    let scene1 = Scene::new(
+    let mut scene1 = Scene::new(
         objs,
         vec![
             Material {
@@ -53,8 +54,9 @@ pub fn main() -> Result<(), String> {
                 kind: MaterialType::Reflective { roughness: 1.0 },
                 ..Default::default()
             },
-        ],
+        ]
     );
+    scene1 = scene1.with_texture(ImageUtils::load_image("./resources/chess.png")?);
 
     let scene2 = Scene {
         max_ray_bounces: 5,
@@ -117,7 +119,7 @@ pub fn main() -> Result<(), String> {
         ..Default::default()
     };
 
-    let mut renderer = renderer::Renderer::new(Arc::new(scene1));
+    let mut renderer = renderer::Renderer::new(scene1);
     let mut camera = Camera::new_with_pos(
         Vec3::new(-2.8777819, 1.3294921, 2.0364523),
         Vec3::new(0.6106094, -0.19236837, -0.76821935),

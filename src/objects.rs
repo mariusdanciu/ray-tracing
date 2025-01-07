@@ -1,4 +1,4 @@
-use glam::{vec3, Vec3};
+use glam::{vec3, Vec3, Vec4};
 
 #[derive(Debug, Copy, Clone)]
 pub enum Object3D {
@@ -209,16 +209,36 @@ impl Cuboid {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Default, Debug, Clone)]
 pub struct Texture {
-    pub path: String
+    pub path: String,
+    pub width: u32,
+    pub height: u32,
+    pub bytes: Vec<u8>,
 }
 
 impl Texture {
     pub fn new(path: impl Into<String>) -> Texture {
         Texture {
-            path: path.into()
+            path: path.into(),
+            ..Default::default()
         }
+    }
+
+    pub fn baricentric_pixel(&self, u: f32, v: f32) -> Vec3 {
+        let x = self.width * u as u32;
+        let y = self.height * u as u32;
+        self.pixel(x, y)
+    }
+
+    pub fn pixel(&self, x: u32, y: u32) -> Vec3 {
+        let pos = (x * self.width + y) as usize;
+
+        Vec3::new(
+            (self.bytes[pos] as f32) / 255.,
+            (self.bytes[pos + 1] as f32) / 255.,
+            (self.bytes[pos + 2] as f32) / 255.,
+        )
     }
 }
 
