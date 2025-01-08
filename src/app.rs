@@ -52,10 +52,10 @@ impl App {
         let mut fps = 0u32;
 
         camera.update(
-            CameraEvent::Resize {
+            vec![CameraEvent::Resize {
                 w: size.0 as usize,
                 h: size.1 as usize,
-            },
+            }],
             frame_time.elapsed().as_millis() as f32 / 1000.,
         );
 
@@ -67,6 +67,7 @@ impl App {
         let mut down = false;
         let mut left = false;
         let mut right = false;
+        let mut rotateXY: Option<Vec2> = None;
 
         'running: loop {
             let elapsed = frame_time.elapsed();
@@ -130,6 +131,7 @@ impl App {
                     }
                     Event::MouseButtonUp { .. } => {
                         mouse_pressed = false;
+                        rotateXY = None;
                         sdl_context.mouse().show_cursor(true);
                     }
 
@@ -150,8 +152,7 @@ impl App {
 
                             last_mouse_pos = mouse_pos;
                             if delta.x != 0.0 || delta.y != 0.0 {
-                                camera.update(CameraEvent::RotateXY { delta }, ts);
-                                updated = true;
+                                rotateXY = Some(delta);
                             }
                         }
                     }
@@ -173,20 +174,25 @@ impl App {
                 }
             }
 
+            let mut events: Vec<CameraEvent> = vec![];
             if up {
-                camera.update(CameraEvent::Up, ts);
-                updated = true;
+                events.push(CameraEvent::Up)
             }
             if down {
-                camera.update(CameraEvent::Down, ts);
-                updated = true;
+                events.push(CameraEvent::Down)
             }
             if left {
-                camera.update(CameraEvent::Left, ts);
-                updated = true;
+                events.push(CameraEvent::Left)
             }
             if right {
-                camera.update(CameraEvent::Right, ts);
+                events.push(CameraEvent::Right)
+            }
+            if let Some(delta) = rotateXY {
+                events.push(CameraEvent::RotateXY { delta })
+            }
+
+            if !events.is_empty() {
+                camera.update(events, ts);
                 updated = true;
             }
 
@@ -203,10 +209,10 @@ impl App {
             if let Some((w, h)) = changed {
                 updated = true;
                 camera.update(
-                    CameraEvent::Resize {
+                    vec![CameraEvent::Resize {
                         w: w as usize,
                         h: h as usize,
-                    },
+                    }],
                     ts,
                 );
 

@@ -82,40 +82,42 @@ impl Camera {
         Mat4::from_cols_array(&[1., 0., 0., 0., 0., c, -s, 0., 0., s, c, 0., 0., 0., 0., 1.])
     }
 
-    pub fn update(&mut self, event: CameraEvent, ts: f32) {
+    pub fn update(&mut self, events: Vec<CameraEvent>, ts: f32) {
         let right_direction = self.forward_direction.cross(self.up);
         let speed = 10.;
         let rotation_speed = 10.;
-        match event {
-            CameraEvent::Up => self.position += self.forward_direction * speed * ts,
-            CameraEvent::Down => self.position -= self.forward_direction * speed * ts,
-            CameraEvent::Left => self.position -= right_direction * speed * ts,
-            CameraEvent::Right => self.position += right_direction * speed * ts,
-            CameraEvent::Resize { w, h } => {
-                self.width = w;
-                self.height = h;
-                self.perspective =
-                    Mat4::perspective_rh(self.fov, w as f32 / h as f32, self.near, self.far);
-                self.inverse_perspective = self.perspective.inverse();
-            }
+        for event in events {
+            match event {
+                CameraEvent::Up => self.position += self.forward_direction * speed * ts,
+                CameraEvent::Down => self.position -= self.forward_direction * speed * ts,
+                CameraEvent::Left => self.position -= right_direction * speed * ts,
+                CameraEvent::Right => self.position += right_direction * speed * ts,
+                CameraEvent::Resize { w, h } => {
+                    self.width = w;
+                    self.height = h;
+                    self.perspective =
+                        Mat4::perspective_rh(self.fov, w as f32 / h as f32, self.near, self.far);
+                    self.inverse_perspective = self.perspective.inverse();
+                }
 
-            CameraEvent::RotateXY { delta } => {
-                let pitch_delta = delta.y * rotation_speed;
-                let yaw_delta = delta.x * rotation_speed;
+                CameraEvent::RotateXY { delta } => {
+                    let pitch_delta = delta.y * rotation_speed;
+                    let yaw_delta = delta.x * rotation_speed;
 
-                let rotation =
-                    Camera::rotate_x_mat(pitch_delta as f32 * std::f32::consts::PI / 180.)
-                        * Camera::rotate_y_mat(yaw_delta as f32 * std::f32::consts::PI / 180.);
+                    let rotation =
+                        Camera::rotate_x_mat(pitch_delta as f32 * std::f32::consts::PI / 180.)
+                            * Camera::rotate_y_mat(yaw_delta as f32 * std::f32::consts::PI / 180.);
 
-                let fd = rotation
-                    * Vec4::new(
-                        self.forward_direction.x,
-                        self.forward_direction.y,
-                        self.forward_direction.z,
-                        1.,
-                    );
+                    let fd = rotation
+                        * Vec4::new(
+                            self.forward_direction.x,
+                            self.forward_direction.y,
+                            self.forward_direction.z,
+                            1.,
+                        );
 
-                self.forward_direction = Vec3::new(fd.x, fd.y, fd.z);
+                    self.forward_direction = Vec3::new(fd.x, fd.y, fd.z);
+                }
             }
         }
 
