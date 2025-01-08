@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use app::App;
 use camera::Camera;
 use glam::{vec3, Vec3};
@@ -60,6 +58,7 @@ pub fn main() -> Result<(), AppError> {
 
     let scene2 = Scene {
         max_ray_bounces: 5,
+        max_frames_rendering: 2000,
         light_dir: vec3(1., -1., -1.).normalize(),
         ambient_color: vec3(0.0, 0.0, 0.0),
         difuse: true,

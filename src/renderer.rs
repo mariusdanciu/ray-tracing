@@ -1,4 +1,4 @@
-use std::{borrow::BorrowMut, cell::Cell, sync::Arc};
+use std::sync::Arc;
 
 use glam::Vec4;
 use rand::rngs::ThreadRng;
@@ -13,7 +13,6 @@ struct Chunk {
     size: usize,
     pixel_offset: usize,
 }
-
 
 pub struct Renderer {
     pub scene: Arc<Scene>,

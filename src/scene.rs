@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use glam::{vec3, Vec3, Vec4};
 
 use glam::vec4;
@@ -80,9 +78,9 @@ impl Scene {
         let mut closest_hit: Option<RayHit> = None;
 
         for obj in self.objects.iter() {
-            if let Some(t) = ray.hit(&obj) {
+            if let k @Some(t) = ray.hit(&obj) {
                 if t.distance < 0. && t.distance > closest_t {
-                    closest_hit = Some(t);
+                    closest_hit = k;
                     closest_t = t.distance;
                 }
             }

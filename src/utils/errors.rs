@@ -1,5 +1,3 @@
-use std::fmt;
-
 use image::ImageError;
 
 #[derive(Debug, Clone)]

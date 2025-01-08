@@ -1,7 +1,7 @@
 use glam::{vec3, Vec3};
 use rand::{rngs::ThreadRng, Rng};
 
-use crate::objects::{Material, Object3D};
+use crate::objects::Object3D;
 
 #[derive(Debug, Copy, Clone)]
 pub struct Ray {

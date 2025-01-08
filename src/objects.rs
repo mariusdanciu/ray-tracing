@@ -1,4 +1,4 @@
-use glam::{vec3, Vec3, Vec4};
+use glam::{vec3, Vec3};
 
 #[derive(Debug, Copy, Clone)]
 pub enum Object3D {

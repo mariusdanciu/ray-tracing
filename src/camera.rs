@@ -82,15 +82,15 @@ impl Camera {
         Mat4::from_cols_array(&[1., 0., 0., 0., 0., c, -s, 0., 0., s, c, 0., 0., 0., 0., 1.])
     }
 
-    pub fn update(&mut self, event: CameraEvent) {
+    pub fn update(&mut self, event: CameraEvent, ts: f32) {
         let right_direction = self.forward_direction.cross(self.up);
-        let speed = 0.2;
-        let rotation_speed = 4.;
+        let speed = 10.;
+        let rotation_speed = 10.;
         match event {
-            CameraEvent::Up => self.position += self.forward_direction * speed,
-            CameraEvent::Down => self.position -= self.forward_direction * speed,
-            CameraEvent::Left => self.position -= right_direction * speed,
-            CameraEvent::Right => self.position += right_direction * speed,
+            CameraEvent::Up => self.position += self.forward_direction * speed * ts,
+            CameraEvent::Down => self.position -= self.forward_direction * speed * ts,
+            CameraEvent::Left => self.position -= right_direction * speed * ts,
+            CameraEvent::Right => self.position += right_direction * speed * ts,
             CameraEvent::Resize { w, h } => {
                 self.width = w;
                 self.height = h;

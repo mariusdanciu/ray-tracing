@@ -1,20 +1,15 @@
 use glam::Vec2;
 use sdl2::event::{Event, WindowEvent};
 
-use sdl2::keyboard::Keycode;
+use sdl2::keyboard::{Keycode, Mod};
 use sdl2::pixels::PixelFormatEnum;
-use sdl2::video::WindowBuildError;
-use sdl2::IntegerOrSdlError;
-
-use std::sync::Arc;
+use sdl2::render::TextureQuery;
 use std::time::Instant;
 
 use crate::camera::{Camera, CameraEvent};
 
-use crate::objects::Texture;
 use crate::renderer::Renderer;
 use crate::utils::errors::AppError;
-use crate::utils::image::ImageUtils;
 
 pub struct App {}
 
@@ -56,16 +51,28 @@ impl App {
         let mut ups = 0u32;
         let mut fps = 0u32;
 
-        camera.update(CameraEvent::Resize {
-            w: size.0 as usize,
-            h: size.1 as usize,
-        });
+        camera.update(
+            CameraEvent::Resize {
+                w: size.0 as usize,
+                h: size.1 as usize,
+            },
+            frame_time.elapsed().as_millis() as f32 / 1000.,
+        );
 
         let mut last_mouse_pos = Vec2::new(0., 0.);
         let mut mouse_pressed = false;
         let mut updated = true;
 
+        let mut up = false;
+        let mut down = false;
+        let mut left = false;
+        let mut right = false;
+
         'running: loop {
+            let elapsed = frame_time.elapsed();
+            let elapsed_nanos = elapsed.as_nanos() as f64;
+            let ts = elapsed.as_secs_f32();
+
             for event in event_pump.poll_iter() {
                 match event {
                     Event::Quit { .. }
@@ -77,29 +84,37 @@ impl App {
                     Event::KeyDown {
                         timestamp: _,
                         window_id: _,
-                        keycode,
+                        keycode: Some(code),
                         scancode: _,
                         keymod: _,
-                        repeat: _,
-                    } => match keycode {
-                        Some(Keycode::W) => {
-                            camera.update(CameraEvent::Up);
-                            updated = true;
-                        }
-                        Some(Keycode::S) => {
-                            camera.update(CameraEvent::Down);
-                            updated = true;
-                        }
-                        Some(Keycode::A) => {
-                            camera.update(CameraEvent::Left);
-                            updated = true;
-                        }
-                        Some(Keycode::D) => {
-                            camera.update(CameraEvent::Right);
-                            updated = true;
-                        }
-                        _ => {}
-                    },
+                        repeat: false,
+                    } => {
+                        match code {
+                            Keycode::W => up = true,
+                            Keycode::S => down = true,
+                            Keycode::A => left = true,
+                            Keycode::D => right = true,
+                            _ => {}
+                        };
+                    }
+
+                    Event::KeyUp {
+                        timestamp,
+                        window_id,
+                        keycode: Some(code),
+                        scancode,
+                        keymod,
+                        repeat,
+                    } => {
+                        match code {
+                            Keycode::W => up = false,
+                            Keycode::S => down = false,
+                            Keycode::A => left = false,
+                            Keycode::D => right = false,
+                            _ => {}
+                        };
+                    }
+
                     Event::MouseButtonDown {
                         timestamp: _,
                         window_id: _,
@@ -135,7 +150,7 @@ impl App {
 
                             last_mouse_pos = mouse_pos;
                             if delta.x != 0.0 || delta.y != 0.0 {
-                                camera.update(CameraEvent::RotateXY { delta });
+                                camera.update(CameraEvent::RotateXY { delta }, ts);
                                 updated = true;
                             }
                         }
@@ -158,11 +173,26 @@ impl App {
                 }
             }
 
-            let elapsed = frame_time.elapsed().as_nanos() as f64;
+            if up {
+                camera.update(CameraEvent::Up, ts);
+                updated = true;
+            }
+            if down {
+                camera.update(CameraEvent::Down, ts);
+                updated = true;
+            }
+            if left {
+                camera.update(CameraEvent::Left, ts);
+                updated = true;
+            }
+            if right {
+                camera.update(CameraEvent::Right, ts);
+                updated = true;
+            }
 
             frame_time = Instant::now();
 
-            delta += elapsed / nanos;
+            delta += elapsed_nanos / nanos;
 
             while delta >= 1. {
                 // App state updates here.
@@ -172,10 +202,13 @@ impl App {
 
             if let Some((w, h)) = changed {
                 updated = true;
-                camera.update(CameraEvent::Resize {
-                    w: w as usize,
-                    h: h as usize,
-                });
+                camera.update(
+                    CameraEvent::Resize {
+                        w: w as usize,
+                        h: h as usize,
+                    },
+                    ts,
+                );
 
                 texture = texture_creator
                     .create_texture_streaming(PixelFormatEnum::ABGR8888, w as u32, h as u32)
