@@ -67,12 +67,12 @@ impl App {
         let mut down = false;
         let mut left = false;
         let mut right = false;
-        let mut rotateXY: Option<Vec2> = None;
 
         'running: loop {
             let elapsed = frame_time.elapsed();
             let elapsed_nanos = elapsed.as_nanos() as f64;
             let ts = elapsed.as_secs_f32();
+            let mut rotateXY: Option<Vec2> = None;
 
             for event in event_pump.poll_iter() {
                 match event {
@@ -151,6 +151,7 @@ impl App {
                             let delta = (mouse_pos - last_mouse_pos) * 0.05;
 
                             last_mouse_pos = mouse_pos;
+                            
                             if delta.x != 0.0 || delta.y != 0.0 {
                                 rotateXY = Some(delta);
                             }

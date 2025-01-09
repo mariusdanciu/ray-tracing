@@ -24,10 +24,22 @@ pub fn main() -> Result<(), AppError> {
     let mut objs = vec![
         Object3D::new_sphere(Vec3::new(-0.9, 0.7, -1.3), 0.2, 3),
         Object3D::new_sphere(Vec3::new(-0.6, -0.0, -0.2), 0.5, 0),
-        Object3D::new_sphere(Vec3::new(0., -100.5, 0.), 100., 2),
+        //Object3D::new_sphere(Vec3::new(0., -100.5, 0.), 100., 2),
     ];
 
-    objs.append(&mut cube.triangles(1));
+    objs.append(&mut cube.triangles(4));
+    objs.push(Object3D::new_triangle(
+        Vec3::new(-5.0, -0.5, 5.),
+        Vec3::new(5.0, -0.5, 5.),
+        Vec3::new(-5., -0.5, -5.),
+        1,
+    ));
+    objs.push(Object3D::new_triangle(
+        Vec3::new(5.0, -0.5, -5.),
+        Vec3::new(-5.0, -0.5, -5.),
+        Vec3::new(5.0, -0.5, 5.),
+        1,
+    ));
 
     let mut scene1 = Scene::new(
         objs,
@@ -39,7 +51,8 @@ pub fn main() -> Result<(), AppError> {
             },
             Material {
                 albedo: Vec3::new(0.4, 0.4, 0.4),
-                kind: MaterialType::Reflective { roughness: 0.2 },
+                kind: MaterialType::Reflective { roughness: 0.3 },
+                texture: Some(0),
                 ..Default::default()
             },
             Material {
@@ -52,7 +65,12 @@ pub fn main() -> Result<(), AppError> {
                 kind: MaterialType::Reflective { roughness: 1.0 },
                 ..Default::default()
             },
-        ]
+            Material {
+                albedo: Vec3::new(0.2, 0.4, 0.8),
+                kind: MaterialType::Reflective { roughness: 0.1 },
+                ..Default::default()
+            },
+        ],
     );
     scene1 = scene1.with_texture(ImageUtils::load_image("./resources/chess.png")?);
 

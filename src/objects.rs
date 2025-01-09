@@ -1,4 +1,4 @@
-use glam::{vec3, Vec3};
+use glam::{vec3, Vec3, Vec4};
 
 #[derive(Debug, Copy, Clone)]
 pub enum Object3D {
@@ -226,13 +226,14 @@ impl Texture {
     }
 
     pub fn baricentric_pixel(&self, u: f32, v: f32) -> Vec3 {
-        let x = self.width * u as u32;
-        let y = self.height * u as u32;
+        let x = (self.width as f32 * u) as u32;
+        let y = (self.height as f32 * v) as u32;
         self.pixel(x, y)
     }
 
     pub fn pixel(&self, x: u32, y: u32) -> Vec3 {
-        let pos = (x * self.width + y) as usize;
+        //println!("x {} y {} w {}, h {}", x, y, self.width, self.height);
+        let pos = (y * 3 * self.width + x * 3) as usize;
 
         Vec3::new(
             (self.bytes[pos] as f32) / 255.,

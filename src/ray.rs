@@ -15,6 +15,8 @@ pub struct RayHit {
     pub point: Vec3,
     pub normal: Vec3,
     pub material_index: usize,
+    pub u: f32,
+    pub v: f32,
 }
 
 impl Default for RayHit {
@@ -24,6 +26,8 @@ impl Default for RayHit {
             point: Default::default(),
             normal: Default::default(),
             material_index: Default::default(),
+            u: 0.,
+            v: 0.
         }
     }
 }
@@ -141,6 +145,8 @@ impl Ray {
                 point: hit_point,
                 normal,
                 material_index,
+                u,
+                v
             });
         } else {
             // This means that there is a line intersection but not a ray intersection.
@@ -203,6 +209,7 @@ impl Ray {
             point: hit_point + *position, // translation cancel
             normal,
             material_index,
+            ..Default::default()
         })
     }
 }

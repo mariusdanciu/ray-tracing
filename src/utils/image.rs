@@ -13,12 +13,16 @@ impl ImageUtils {
     pub fn load_image(path: impl Into<String>) -> Result<Texture, AppError> {
         let p: String = path.into();
         let img = ImageReader::open(p.clone())?.decode()?;
-        let mut bytes: Vec<u8> = Vec::new();
-        img.write_to(&mut Cursor::new(&mut bytes), image::ImageFormat::Png)?;
+        println!("{:?}", img.color());
+        let (w, h) = (img.width(), img.height());
+
+        let  bytes: Vec<u8> = img.into_bytes();
+
+        println!("img len {}", bytes.len());
         Ok(Texture{
             path: p,
-            width: img.width(),
-            height: img.height(),
+            width: w,
+            height: h,
             bytes
         })
     }
