@@ -69,6 +69,7 @@ impl App {
         let mut down = false;
         let mut left = false;
         let mut right = false;
+        let num_cores = num_cpus::get();
 
         'running: loop {
             let elapsed = frame_time.elapsed();
@@ -229,7 +230,7 @@ impl App {
             }
 
             canvas.clear();
-            renderer.render_par(&mut texture, &mut img, &camera, updated)?;
+            renderer.render_par(&mut texture, &mut img, &camera, updated, num_cores)?;
             canvas.copy(&texture, None, None)?;
             canvas.present();
 

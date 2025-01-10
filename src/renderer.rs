@@ -71,6 +71,7 @@ impl Renderer {
         img: &mut Vec<u8>,
         camera: &Camera,
         updated: bool,
+        num_chunks: usize
     ) -> Result<(), String> {
         let w = camera.width;
         let h = camera.height;
@@ -83,8 +84,6 @@ impl Renderer {
         if self.frame_index > self.scene.max_frames_rendering {
             return Ok(())
         }
-
-        let num_chunks = 12;
 
         let img_len = img.len();
         let img_chunk_size = (img_len / (num_chunks * 4)) * 4;

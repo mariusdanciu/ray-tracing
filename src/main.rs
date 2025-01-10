@@ -14,6 +14,7 @@ mod scene;
 mod utils;
 
 pub fn main() -> Result<(), AppError> {
+
     let cube = Cuboid {
         center: Vec3::new(-0.9, 0.3, -1.3),
         length: 1.0,
