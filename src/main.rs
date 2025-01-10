@@ -15,14 +15,14 @@ mod utils;
 
 pub fn main() -> Result<(), AppError> {
     let cube = Cuboid {
-        center: Vec3::new(-0.9, 0., -1.3),
+        center: Vec3::new(-0.9, 0.3, -1.3),
         length: 1.0,
         width: 1.,
         depth: 1.,
     };
 
     let mut objs = vec![
-        Object3D::new_sphere(Vec3::new(-0.9, 0.7, -1.3), 0.2, 3),
+        Object3D::new_sphere(Vec3::new(-0.9, 1., -1.3), 0.2, 3),
         Object3D::new_sphere(Vec3::new(-0.6, -0.0, -0.2), 0.5, 0),
         //Object3D::new_sphere(Vec3::new(0., -100.5, 0.), 100., 2),
     ];
@@ -66,7 +66,7 @@ pub fn main() -> Result<(), AppError> {
                 ..Default::default()
             },
             Material {
-                albedo: Vec3::new(0.2, 0.4, 0.8),
+                albedo: Vec3::new(0.4, 0.4, 0.4),
                 kind: MaterialType::Reflective { roughness: 0.1 },
                 ..Default::default()
             },
