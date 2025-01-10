@@ -136,7 +136,7 @@ pub fn main() -> Result<(), AppError> {
         ..Default::default()
     };
 
-    let mut renderer = renderer::Renderer::new(scene1);
+    let mut renderer = renderer::Renderer::new(scene2);
     let mut camera = Camera::new_with_pos(
         Vec3::new(-2.8777819, 1.3294921, 2.0364523),
         Vec3::new(0.6106094, -0.19236837, -0.76821935),

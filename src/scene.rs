@@ -103,18 +103,23 @@ impl Scene {
         if let Some(hit) = self.trace_ray(ray) {
             let material = self.materials[hit.material_index];
             let mut albedo = material.albedo;
+            let light_angle = hit.normal.dot(-self.light_dir).max(0.0);
+
+            let light_multiplier: f32;
+            if !self.difuse {
+                light_multiplier = light_angle;
+            } else {
+                light_multiplier = material.emission_power;
+            }
+
             match material.kind {
                 MaterialType::Reflective { roughness } => {
                     let mut ll = light;
                     if let Some(idx) = material.texture {
                         albedo = self.textures[idx].baricentric_pixel(hit.u, hit.v);
-                     }
-                    if !self.difuse {
-                        let light_angle = hit.normal.dot(-self.light_dir).max(0.0);   
-                        ll += albedo * light_angle;
-                    } else {
-                        ll += albedo * material.emission_power;
                     }
+
+                    ll += albedo * light_multiplier;
 
                     let r = ray.reflection_ray(hit, roughness, rnd);
                     self.color(r, rnd, depth + 1, ll, contribution * albedo)
@@ -132,7 +137,7 @@ impl Scene {
                                 refraction_ray,
                                 rnd,
                                 depth + 1,
-                                light + albedo * material.emission_power,
+                                light + albedo * light_multiplier,
                                 contribution * albedo,
                             );
                         }
@@ -147,7 +152,7 @@ impl Scene {
                         reflection_ray,
                         rnd,
                         depth + 1,
-                        light + albedo * material.emission_power,
+                        light + albedo * light_multiplier,
                         contribution * albedo,
                     );
 
