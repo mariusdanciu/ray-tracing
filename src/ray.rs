@@ -79,14 +79,13 @@ impl Ray {
                 )
                 .normalize();
         } else {
-            let sphere_random = vec3(
+            let rnd = vec3(
                 rnd.gen_range(-1.0..1.0),
                 rnd.gen_range(-1.0..1.0),
                 rnd.gen_range(-1.0..1.0),
-            )
-            .normalize();
+            );
 
-            dir = -(hit.normal + sphere_random).normalize();
+            dir = -(hit.normal + rnd).normalize();
         }
         Ray {
             origin: hit.point + hit.normal * 0.0001,

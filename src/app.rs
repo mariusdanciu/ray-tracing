@@ -59,6 +59,8 @@ impl App {
             frame_time.elapsed().as_millis() as f32 / 1000.,
         );
 
+        let mut img: Vec<u8> = vec![0; (size.0 * size.1 * 4) as usize];
+
         let mut last_mouse_pos = Vec2::new(0., 0.);
         let mut mouse_pressed = false;
         let mut updated = true;
@@ -151,7 +153,7 @@ impl App {
                             let delta = (mouse_pos - last_mouse_pos) * 0.05;
 
                             last_mouse_pos = mouse_pos;
-                            
+
                             if delta.x != 0.0 || delta.y != 0.0 {
                                 rotateXY = Some(delta);
                             }
@@ -164,9 +166,11 @@ impl App {
                     } => match win_event {
                         WindowEvent::SizeChanged(w, h) => {
                             changed = Some((w as usize, h as usize));
+                            img = vec![0; (w * h * 4) as usize];
                         }
                         WindowEvent::Resized(w, h) => {
                             changed = Some((w as usize, h as usize));
+                            img = vec![0; (w * h * 4) as usize];
                         }
                         WindowEvent::Exposed => {}
                         _ => {}
@@ -225,7 +229,7 @@ impl App {
             }
 
             canvas.clear();
-            renderer.render_par(&mut texture, &camera, updated)?;
+            renderer.render_par(&mut texture, &mut img, &camera, updated)?;
             canvas.copy(&texture, None, None)?;
             canvas.present();
 

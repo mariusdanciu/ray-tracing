@@ -68,6 +68,7 @@ impl Renderer {
     pub fn render_par(
         &mut self,
         texture: &mut Texture,
+        img: &mut Vec<u8>,
         camera: &Camera,
         updated: bool,
     ) -> Result<(), String> {
@@ -83,15 +84,13 @@ impl Renderer {
             return Ok(())
         }
 
-        let num_chunks = 10;
-        let mut img: Vec<u8> = vec![0; w * h * 4];
+        let num_chunks = 12;
 
         let img_len = img.len();
         let img_chunk_size = (img_len / (num_chunks * 4)) * 4;
 
         let chunks: Vec<(usize, &mut [u8])> = img.chunks_mut(img_chunk_size).enumerate().collect();
 
-        
         let col: Vec<Renderer> = chunks
             .into_par_iter()
             .map(|e| {
