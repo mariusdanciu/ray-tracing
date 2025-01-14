@@ -49,7 +49,7 @@ pub fn main() -> Result<(), AppError> {
                 albedo: Vec3::new(1., 1., 1.),
                 kind: MaterialType::Refractive {
                     transparency: 1.,
-                    refraction_index: 0.3,
+                    refraction_index: 0.85,
                 },
                 //kind: MaterialType::Reflective { roughness: 1.0 },
                 ..Default::default()

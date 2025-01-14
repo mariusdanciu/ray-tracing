@@ -27,7 +27,7 @@ impl Default for RayHit {
             normal: Default::default(),
             material_index: Default::default(),
             u: 0.,
-            v: 0.
+            v: 0.,
         }
     }
 }
@@ -42,7 +42,8 @@ impl Ray {
         let mut eta_t = index;
         let mut eta_i = 1.0;
         let mut i_dot_n = self.direction.dot(intersection.normal);
-        if i_dot_n < 0.0 {
+        let outside = i_dot_n < 0.0;
+        if outside {
             //Outside the surface
             i_dot_n = -i_dot_n;
         } else {
@@ -51,15 +52,23 @@ impl Ray {
             eta_i = eta_t;
             eta_t = 1.0;
         }
+        let v_bias = bias * ref_n;
 
         let eta = eta_i / eta_t;
         let k = 1.0 - (eta * eta) * (1.0 - i_dot_n * i_dot_n);
         if k < 0.0 {
             None
         } else {
+            let org: Vec3;
+            if outside {
+                org = intersection.point - v_bias;
+            } else {
+                org = intersection.point + v_bias;
+            }
+            //eta * I + (eta * cosi - sqrtf(k)) * n;
             Some(Ray {
-                origin: intersection.point + (ref_n * bias),
-                direction: (self.direction + i_dot_n * ref_n) * eta - ref_n * k.sqrt(),
+                origin: org,
+                direction: self.direction * eta + (i_dot_n * eta - k.sqrt()) * ref_n,
             })
         }
     }
@@ -145,7 +154,7 @@ impl Ray {
                 normal,
                 material_index,
                 u,
-                v
+                v,
             });
         } else {
             // This means that there is a line intersection but not a ray intersection.

@@ -264,23 +264,34 @@ impl Default for Material {
 
 impl Material {
     pub fn fresnel(&self, incident: Vec3, normal: Vec3, index: f32) -> f64 {
-        let i_dot_n = incident.dot(normal) as f64;
+        let mut i_dot_n = incident.dot(normal).clamp(-1., 1.) as f64;
         let mut eta_i = 1.0;
         let mut eta_t = index as f64;
-        if i_dot_n > 0.0 {
+        if i_dot_n >= 0.0 {
             eta_i = eta_t;
             eta_t = 1.0;
+        } else {
+            i_dot_n = -i_dot_n;
         }
+        
 
-        let sin_t = eta_i / eta_t * (1.0f64 - i_dot_n * i_dot_n).max(0.0).sqrt();
+        let sin_t = eta_i / eta_t * (1. - i_dot_n * i_dot_n).max(0.0).sqrt();
         if sin_t > 1.0 {
             //Total internal reflection
             return 1.0;
         } else {
             let cos_t = (1.0 - sin_t * sin_t).max(0.0).sqrt();
             let cos_i = cos_t.abs();
-            let r_s = ((eta_t * cos_i) - (eta_i * cos_t)) / ((eta_t * cos_i) + (eta_i * cos_t));
-            let r_p = ((eta_i * cos_i) - (eta_t * cos_t)) / ((eta_i * cos_i) + (eta_t * cos_t));
+
+
+            let et_ci: f64 = eta_t * cos_i;
+            let ei_ct = eta_i * cos_t;
+            let ei_ci = eta_i * cos_i;
+            let et_ct = eta_t * cos_t;
+
+
+            let r_s = (et_ci - ei_ct) / (et_ci + ei_ct);
+            let r_p = (ei_ci - et_ct) / (ei_ci + et_ct);
             return (r_s * r_s + r_p * r_p) / 2.0;
         }
     }
