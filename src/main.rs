@@ -14,7 +14,6 @@ mod scene;
 mod utils;
 
 pub fn main() -> Result<(), AppError> {
-
     let cube = Cuboid {
         center: Vec3::new(-0.9, 0.3, -1.3),
         length: 1.0,
@@ -46,8 +45,12 @@ pub fn main() -> Result<(), AppError> {
         objs,
         vec![
             Material {
-                albedo: Vec3::new(0.9, 0.1, 0.0),
-                kind: MaterialType::Reflective { roughness: 1.0 },
+                albedo: Vec3::new(0.9, 0.9, 0.9),
+                kind: MaterialType::Refractive {
+                    transparency: 0.7,
+                    refraction_index: 0.4,
+                },
+                //kind: MaterialType::Reflective { roughness: 1.0 },
                 ..Default::default()
             },
             Material {

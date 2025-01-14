@@ -143,9 +143,17 @@ impl Scene {
                         }
                     }
 
+                    let outside = ray.direction.dot(hit.normal) < 0.;
+                    let bias = 0.0001 * hit.normal;
+                    let orig: Vec3;
+                    if outside {
+                        orig = hit.point + bias;
+                    } else {
+                        orig = hit.point - bias;
+                    }
                     let reflection_ray = Ray {
-                        origin: hit.point + hit.normal * 0.0001,
-                        direction: ray.reflect(-hit.normal),
+                        origin: orig,
+                        direction: ray.reflect(hit.normal).normalize(),
                     };
 
                     let reflection_color = self.color(
@@ -156,9 +164,8 @@ impl Scene {
                         contribution * albedo,
                     );
 
-                    let mut color = reflection_color * kr + refraction_color * (1.0 - kr);
-                    color = color * transparency * albedo;
-                    color
+                    let color = reflection_color * kr + refraction_color * (1.0 - kr);
+                    light + color * transparency * albedo * light_multiplier
                 }
             }
         } else {
