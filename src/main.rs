@@ -43,7 +43,6 @@ pub fn main() -> Result<(), AppError> {
 
     let mut scene1 = Scene::new(
         objs,
-        
         vec![
             Material {
                 albedo: Vec3::new(1., 1., 1.),
@@ -72,15 +71,23 @@ pub fn main() -> Result<(), AppError> {
             },
         ],
     );
-    scene1 = scene1.with_texture(ImageUtils::load_image("./resources/chess.png")?);
+
+    scene1 = scene1
+        .with_texture(ImageUtils::load_image("./resources/chess.png")?)
+        .with_light(scene::Light {
+            direction: vec3(1., -1., -1.).normalize(),
+            power: 1.5,
+        });
     scene1.difuse = false;
     scene1.max_frames_rendering = 20000;
-    scene1.ambient_color = vec3(0., 0., 0.);
 
     let scene2 = Scene {
         max_ray_bounces: 5,
         max_frames_rendering: 5000,
-        light_dir: vec3(1., -1., -1.).normalize(),
+        light: scene::Light {
+            direction: vec3(1., -1., -1.).normalize(),
+            power: 1.5,
+        },
         ambient_color: vec3(0.0, 0.0, 0.0),
         difuse: true,
         objects: vec![

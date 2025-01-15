@@ -6,9 +6,15 @@ use rand::rngs::ThreadRng;
 use crate::objects::{Material, MaterialType, Object3D, Texture};
 use crate::ray::{Ray, RayHit};
 
+#[derive(Clone, Default)]
+pub struct Light {
+    pub direction: Vec3,
+    pub power: f32,
+}
+
 #[derive(Clone)]
 pub struct Scene {
-    pub light_dir: Vec3,
+    pub light: Light,
     pub ambient_color: Vec3,
     pub objects: Vec<Object3D>,
     pub materials: Vec<Material>,
@@ -21,7 +27,7 @@ pub struct Scene {
 impl Default for Scene {
     fn default() -> Self {
         Self {
-            light_dir: Default::default(),
+            light: Default::default(),
             ambient_color: Default::default(),
             objects: Default::default(),
             materials: Default::default(),
@@ -36,7 +42,10 @@ impl Default for Scene {
 impl Scene {
     pub fn new(objects: Vec<Object3D>, materials: Vec<Material>) -> Scene {
         Scene {
-            light_dir: vec3(-1., -1., -1.).normalize(),
+            light: Light {
+                direction: vec3(1., -1., -1.).normalize(),
+                power: 1.,
+            },
             ambient_color: vec3(0.1, 0.1, 0.1),
             objects,
             materials,
@@ -54,6 +63,12 @@ impl Scene {
             (c.z * 255.) as u8,
             (c.w + 255.) as u8,
         )
+    }
+
+    pub fn with_light(&self, light: Light) -> Scene {
+        let mut s = self.clone();
+        s.light = light;
+        s
     }
 
     pub fn with_texture(&self, texture: Texture) -> Scene {
@@ -111,7 +126,7 @@ impl Scene {
         if let Some(hit) = self.trace_ray(ray) {
             let material = self.materials[hit.material_index];
             let mut albedo = material.albedo;
-            let light_angle = hit.normal.dot(-self.light_dir).max(0.0);
+            let light_angle = hit.normal.dot(-self.light.direction).max(0.0) * self.light.power;
 
             match material.kind {
                 MaterialType::Reflective { roughness } => {
