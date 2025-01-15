@@ -49,7 +49,7 @@ pub fn main() -> Result<(), AppError> {
                 albedo: Vec3::new(1., 1., 1.),
                 kind: MaterialType::Refractive {
                     transparency: 0.8,
-                    refraction_index: 0.95,
+                    refraction_index: 0.9,
                 },
                 //kind: MaterialType::Reflective { roughness: 1.0 },
                 ..Default::default()
@@ -75,7 +75,7 @@ pub fn main() -> Result<(), AppError> {
     scene1 = scene1.with_texture(ImageUtils::load_image("./resources/chess.png")?);
     scene1.difuse = false;
     scene1.max_frames_rendering = 20000;
-    //scene1.ambient_color = vec3(0.9, 0.9, 0.9);
+    scene1.ambient_color = vec3(0., 0., 0.);
 
     let scene2 = Scene {
         max_ray_bounces: 5,

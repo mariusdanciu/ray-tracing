@@ -97,7 +97,7 @@ impl Ray {
 
             Some(Ray {
                 origin: orig,
-                direction: self.direction * eta + (i_dot_n * eta - k.sqrt()) * ref_n,
+                direction: (self.direction * eta + (i_dot_n * eta - k.sqrt()) * ref_n).normalize(),
             })
         }
     }
