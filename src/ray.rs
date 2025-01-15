@@ -37,42 +37,6 @@ impl Ray {
         self.direction - (2. * (self.direction.dot(normal))) * normal
     }
 
-    fn transmission(&self, intersection: RayHit, bias: f32, index: f32) -> Option<Ray> {
-        let mut ref_n = intersection.normal;
-        let mut eta_t = index;
-        let mut eta_i = 1.0;
-        let mut i_dot_n = self.direction.dot(intersection.normal);
-        let outside = i_dot_n < 0.0;
-        if outside {
-            //Outside the surface
-            i_dot_n = -i_dot_n;
-        } else {
-            //Inside the surface; invert the normal and swap the indices of refraction
-            ref_n = -intersection.normal;
-            eta_i = eta_t;
-            eta_t = 1.0;
-        }
-        let v_bias = bias * ref_n;
-
-        let eta = eta_i / eta_t;
-        let k = 1.0 - (eta * eta) * (1.0 - i_dot_n * i_dot_n);
-        if k < 0.0 {
-            None
-        } else {
-            let org: Vec3;
-            if outside {
-                org = intersection.point - v_bias;
-            } else {
-                org = intersection.point + v_bias;
-            }
-            //eta * I + (eta * cosi - sqrtf(k)) * n;
-            Some(Ray {
-                origin: org,
-                direction: self.direction * eta + (i_dot_n * eta - k.sqrt()) * ref_n,
-            })
-        }
-    }
-
     pub fn reflection_ray(&self, hit: RayHit, roughness: f32, rnd: &mut ThreadRng) -> Ray {
         let dir: Vec3;
         if roughness < 1. {
@@ -103,7 +67,39 @@ impl Ray {
     }
 
     pub fn refraction_ray(&self, hit: RayHit, refraction_index: f32) -> Option<Ray> {
-        self.transmission(hit, 0.001, refraction_index)
+        let bias = 0.0001_f32;
+        let mut ref_n = hit.normal;
+        let mut eta_t = refraction_index;
+        let mut eta_i = 1.0;
+        let mut i_dot_n = self.direction.dot(hit.normal);
+        let outside = i_dot_n < 0.0;
+        if outside {
+            //Outside the surface
+            i_dot_n = -i_dot_n;
+        } else {
+            //Inside the surface; invert the normal and swap the indices of refraction
+            ref_n = -hit.normal;
+            eta_i = eta_t;
+            eta_t = 1.0;
+        }
+        let v_bias = bias * ref_n;
+
+        let eta = eta_i / eta_t;
+        let k = 1.0 - (eta * eta) * (1.0 - i_dot_n * i_dot_n);
+        if k < 0.0 {
+            None
+        } else {
+            let orig: Vec3 = if outside {
+                hit.point - v_bias
+            } else {
+                hit.point + v_bias
+            };
+
+            Some(Ray {
+                origin: orig,
+                direction: self.direction * eta + (i_dot_n * eta - k.sqrt()) * ref_n,
+            })
+        }
     }
 
     fn moller_trumbore_intersection(

@@ -22,12 +22,12 @@ pub fn main() -> Result<(), AppError> {
     };
 
     let mut objs = vec![
-        Object3D::new_sphere(Vec3::new(-0.9, 1., -1.3), 0.2, 3),
+        Object3D::new_sphere(Vec3::new(-0.9, 1., -1.3), 0.2, 2),
         Object3D::new_sphere(Vec3::new(-0.6, -0.0, -0.2), 0.5, 0),
         //Object3D::new_sphere(Vec3::new(0., -100.5, 0.), 100., 2),
     ];
 
-    objs.append(&mut cube.triangles(4));
+    objs.append(&mut cube.triangles(3));
     objs.push(Object3D::new_triangle(
         Vec3::new(-5.0, -0.5, 5.),
         Vec3::new(5.0, -0.5, 5.),
@@ -48,8 +48,8 @@ pub fn main() -> Result<(), AppError> {
             Material {
                 albedo: Vec3::new(1., 1., 1.),
                 kind: MaterialType::Refractive {
-                    transparency: 1.,
-                    refraction_index: 0.85,
+                    transparency: 0.8,
+                    refraction_index: 0.95,
                 },
                 //kind: MaterialType::Reflective { roughness: 1.0 },
                 ..Default::default()
@@ -58,17 +58,11 @@ pub fn main() -> Result<(), AppError> {
                 albedo: Vec3::new(0.4, 0.4, 0.4),
                 kind: MaterialType::Reflective { roughness: 0.2 },
                 texture: Some(0),
-                emission_power: 0.8,
                 ..Default::default()
             },
             Material {
                 albedo: Vec3::new(0.2, 0.5, 1.0),
-                kind: MaterialType::Reflective { roughness: 0.1 },
-                ..Default::default()
-            },
-            Material {
-                albedo: Vec3::new(0.9, 0.8, 0.0),
-                kind: MaterialType::Reflective { roughness: 1.0 },
+                kind: MaterialType::Reflective { roughness: 0.4 },
                 ..Default::default()
             },
             Material {
@@ -79,7 +73,8 @@ pub fn main() -> Result<(), AppError> {
         ],
     );
     scene1 = scene1.with_texture(ImageUtils::load_image("./resources/chess.png")?);
-    //scene1.difuse = true;
+    scene1.difuse = false;
+    scene1.max_frames_rendering = 20000;
     //scene1.ambient_color = vec3(0.9, 0.9, 0.9);
 
     let scene2 = Scene {

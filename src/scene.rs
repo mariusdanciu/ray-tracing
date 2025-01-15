@@ -113,14 +113,13 @@ impl Scene {
             let mut albedo = material.albedo;
             let light_angle = hit.normal.dot(-self.light_dir).max(0.0);
 
-            let mut light = self.make_light(albedo, material.emission_power, light, light_angle);
-
             match material.kind {
                 MaterialType::Reflective { roughness } => {
                     if let Some(idx) = material.texture {
                         albedo = self.textures[idx].baricentric_pixel(hit.u, hit.v);
                     }
-                    light = self.make_light(albedo, material.emission_power, light, light_angle);
+                    let light =
+                        self.make_light(albedo, material.emission_power, light, light_angle);
 
                     let r = ray.reflection_ray(hit, roughness, rnd);
                     self.color(r, rnd, depth + 1, light, contribution * albedo)
@@ -129,6 +128,8 @@ impl Scene {
                     transparency,
                     refraction_index,
                 } => {
+                    let light =
+                        self.make_light(albedo, material.emission_power, light, light_angle);
                     let mut refraction_color = Vec3::ZERO;
                     let kr = material.fresnel(ray.direction, hit.normal, refraction_index) as f32;
 
@@ -146,22 +147,25 @@ impl Scene {
 
                     let outside = ray.direction.dot(hit.normal) < 0.;
                     let bias = 0.0001 * hit.normal;
-                    let orig: Vec3;
-                    if outside {
-                        orig = hit.point + bias;
+                    let orig: Vec3 = if outside {
+                        hit.point + bias
                     } else {
-                        orig = hit.point - bias;
-                    }
+                        hit.point - bias
+                    };
+
                     let reflection_ray = Ray {
                         origin: orig,
                         direction: ray.reflect(hit.normal).normalize(),
                     };
 
+                    let _reflection_ray = ray.reflection_ray(hit, 0., rnd);
+
                     let reflection_color =
                         self.color(reflection_ray, rnd, depth + 1, light, contribution * albedo);
 
-                    let color = reflection_color * kr + refraction_color * (1.0 - kr);
-                    color * transparency
+                    let color =
+                        reflection_color * kr + refraction_color * (1.0 - kr) * transparency;
+                    color * albedo
                 }
             }
         } else {
