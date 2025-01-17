@@ -15,14 +15,14 @@ mod utils;
 
 pub fn main() -> Result<(), AppError> {
     let cube = Cuboid {
-        center: Vec3::new(-0.9, 0.3, -1.3),
+        center: Vec3::new(-0.9, 0., -1.3),
         length: 1.0,
         width: 1.,
         depth: 1.,
     };
 
     let mut objs = vec![
-        Object3D::new_sphere(Vec3::new(-0.9, 1., -1.3), 0.2, 2),
+        Object3D::new_sphere(Vec3::new(-0.9, 1., -1.3), 0.3, 2),
         Object3D::new_sphere(Vec3::new(-0.6, -0.0, -0.2), 0.5, 0),
         //Object3D::new_sphere(Vec3::new(0., -100.5, 0.), 100., 2),
     ];
@@ -45,28 +45,38 @@ pub fn main() -> Result<(), AppError> {
         objs,
         vec![
             Material {
-                albedo: Vec3::new(1., 1., 1.),
-                kind: MaterialType::Refractive {
-                    transparency: 0.8,
-                    refraction_index: 0.9,
-                },
-                //kind: MaterialType::Reflective { roughness: 1.0 },
+                ambience: 0.3,
+                diffuse: 0.7,
+                shininess: 6.,
+                specular: 0.9,
+                albedo: Vec3::new(0.3, 0.5, 1.),
+                // kind: MaterialType::Refractive {
+                //     transparency: 0.8,
+                //     refraction_index: 0.9,
+                // },
+                kind: MaterialType::Reflective { roughness: 0.2 },
                 ..Default::default()
             },
             Material {
+                ambience: 0.1,
+                diffuse: 5.1,
+                shininess: 10.,
+                specular: 0.9,
                 albedo: Vec3::new(0.4, 0.4, 0.4),
-                kind: MaterialType::Reflective { roughness: 0.2 },
+                kind: MaterialType::Reflective { roughness: 0.5 },
                 texture: Some(0),
                 ..Default::default()
             },
             Material {
-                albedo: Vec3::new(0.2, 0.5, 1.0),
-                kind: MaterialType::Reflective { roughness: 0.4 },
+                albedo: Vec3::new(0.9, 0.2, 0.0),
+                kind: MaterialType::Reflective { roughness: 1.0 },
                 ..Default::default()
             },
             Material {
+                shininess: 10.,
+                specular: 1.,
                 albedo: Vec3::new(0.4, 0.4, 0.4),
-                kind: MaterialType::Reflective { roughness: 0.1 },
+                kind: MaterialType::Reflective { roughness: 0.2 },
                 ..Default::default()
             },
         ],
@@ -75,11 +85,11 @@ pub fn main() -> Result<(), AppError> {
     scene1 = scene1
         .with_texture(ImageUtils::load_image("./resources/chess.png")?)
         .with_light(scene::Light {
-            direction: vec3(1., -1., -1.).normalize(),
+            direction: vec3(-1., -1., -1.).normalize(),
             power: 1.5,
         });
     scene1.difuse = false;
-    scene1.max_frames_rendering = 20000;
+    scene1.max_frames_rendering = 1000;
 
     let scene2 = Scene {
         max_ray_bounces: 5,

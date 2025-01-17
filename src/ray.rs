@@ -37,6 +37,14 @@ impl Ray {
         self.direction - (2. * (self.direction.dot(normal))) * normal
     }
 
+    pub fn refract(&self, normal: Vec3, refraction_index: f32) -> Vec3 {
+        let cos_theta = (-self.direction).dot(normal).min(1.);
+        let out_perp = refraction_index * (self.direction + cos_theta);
+        let len = out_perp.length();
+        let out_parallel = -((1. - len * len).abs()).sqrt() * normal;
+        out_perp + out_parallel
+    }
+
     pub fn reflection_ray(&self, hit: RayHit, roughness: f32, rnd: &mut ThreadRng) -> Ray {
         let dir: Vec3;
         if roughness < 1. {

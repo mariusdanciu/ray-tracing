@@ -245,6 +245,10 @@ impl Texture {
 
 #[derive(Debug, Copy, Clone)]
 pub struct Material {
+    pub ambience: f32,
+    pub diffuse: f32,
+    pub specular: f32,
+    pub shininess: f32,
     pub albedo: Vec3,
     pub texture: Option<usize>,
     pub kind: MaterialType,
@@ -254,6 +258,10 @@ pub struct Material {
 impl Default for Material {
     fn default() -> Self {
         Self {
+            ambience: 0.2,
+            diffuse: 0.7,
+            specular: 0.5,
+            shininess: 5.,
             albedo: Vec3::ZERO,
             texture: None,
             kind: MaterialType::Reflective { roughness: 1.0 },

@@ -112,39 +112,69 @@ impl Scene {
         }
     }
 
+    pub fn reflect(direction: Vec3, normal: Vec3) -> Vec3 {
+        direction - (2. * (direction.dot(normal))) * normal
+    }
+
+    fn phong(
+        &self,
+        ray: &Ray,
+        hit: &RayHit,
+        light: &Light,
+        color: Vec3,
+        material: &Material,
+    ) -> Vec3 {
+        let coeff = -ray.direction.dot(hit.normal);
+        let ambience = material.ambience * color;
+        let diffuse = material.diffuse * coeff.max(0.) * color;
+        let shininess = (ray
+            .direction
+            .dot(Self::reflect(light.direction, hit.normal)))
+        .max(0.)
+        .powf(material.shininess);
+        let specular = material.specular * shininess * color;
+
+        ambience + diffuse + specular
+    }
+
     fn color(
         &self,
         ray: Ray,
         rnd: &mut ThreadRng,
         depth: u8,
-        light: Vec3,
+        light_color: Vec3,
         contribution: Vec3,
     ) -> Vec3 {
         if depth >= self.max_ray_bounces {
-            return light;
+            return light_color;
         }
         if let Some(hit) = self.trace_ray(ray) {
             let material = self.materials[hit.material_index];
             let mut albedo = material.albedo;
-            let light_angle = hit.normal.dot(-self.light.direction).max(0.0) * self.light.power;
+
+            
+            //-hit.normal.dot(self.light.direction);
 
             match material.kind {
                 MaterialType::Reflective { roughness } => {
                     if let Some(idx) = material.texture {
                         albedo = self.textures[idx].baricentric_pixel(hit.u, hit.v);
                     }
-                    let light =
-                        self.make_light(albedo, material.emission_power, light, light_angle);
+                    let p_light = self.phong(&ray, &hit, &self.light, albedo, &material);
+                    //let light =
+                    //    self.make_light(albedo, material.emission_power, light, light_angle);
 
                     let r = ray.reflection_ray(hit, roughness, rnd);
-                    self.color(r, rnd, depth + 1, light, contribution * albedo)
+                    
+                    self.color(r, rnd, depth + 1, p_light, contribution * albedo)
                 }
                 MaterialType::Refractive {
                     transparency,
                     refraction_index,
                 } => {
-                    let light =
-                        self.make_light(albedo, material.emission_power, light, light_angle);
+                    let p_light = self.phong(&ray, &hit, &self.light, albedo, &material);
+                    //let light =
+                    //    self.make_light(albedo, material.emission_power, light, light_angle);
                     let mut refraction_color = Vec3::ZERO;
                     let kr = material.fresnel(ray.direction, hit.normal, refraction_index) as f32;
 
@@ -154,7 +184,7 @@ impl Scene {
                                 refraction_ray,
                                 rnd,
                                 depth + 1,
-                                light,
+                                light_color,
                                 contribution * albedo,
                             );
                         }
@@ -173,10 +203,8 @@ impl Scene {
                         direction: ray.reflect(hit.normal).normalize(),
                     };
 
-                    let _reflection_ray = ray.reflection_ray(hit, 0., rnd);
-
                     let reflection_color =
-                        self.color(reflection_ray, rnd, depth + 1, light, contribution * albedo);
+                        self.color(reflection_ray, rnd, depth + 1, p_light, contribution * albedo);
 
                     let color =
                         reflection_color * kr + refraction_color * (1.0 - kr) * transparency;
@@ -184,7 +212,7 @@ impl Scene {
                 }
             }
         } else {
-            light + self.ambient_color * contribution
+            light_color + self.ambient_color * contribution
         }
     }
 
