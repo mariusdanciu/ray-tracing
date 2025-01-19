@@ -3,6 +3,8 @@ use rand::{rngs::ThreadRng, Rng};
 
 use crate::objects::Object3D;
 
+pub static EPSILON: f32 = 0.0001_f32;
+
 #[derive(Debug, Copy, Clone)]
 pub struct Ray {
     pub origin: Vec3,
@@ -37,14 +39,6 @@ impl Ray {
         self.direction - (2. * (self.direction.dot(normal))) * normal
     }
 
-    pub fn refract(&self, normal: Vec3, refraction_index: f32) -> Vec3 {
-        let cos_theta = (-self.direction).dot(normal).min(1.);
-        let out_perp = refraction_index * (self.direction + cos_theta);
-        let len = out_perp.length();
-        let out_parallel = -((1. - len * len).abs()).sqrt() * normal;
-        out_perp + out_parallel
-    }
-
     pub fn reflection_ray(&self, hit: RayHit, roughness: f32, rnd: &mut ThreadRng) -> Ray {
         let dir: Vec3;
         if roughness < 1. {
@@ -75,39 +69,32 @@ impl Ray {
     }
 
     pub fn refraction_ray(&self, hit: RayHit, refraction_index: f32) -> Option<Ray> {
-        let bias = 0.0001_f32;
-        let mut ref_n = hit.normal;
+        let mut normal = hit.normal;
         let mut eta_t = refraction_index;
         let mut eta_i = 1.0;
-        let mut i_dot_n = self.direction.dot(hit.normal);
-        let outside = i_dot_n < 0.0;
-        if outside {
-            //Outside the surface
-            i_dot_n = -i_dot_n;
+        let mut c1 = self.direction.dot(hit.normal);
+
+        if c1 < 0.0 {
+            c1 = -c1;
         } else {
-            //Inside the surface; invert the normal and swap the indices of refraction
-            ref_n = -hit.normal;
+            normal = -normal;
             eta_i = eta_t;
-            eta_t = 1.0;
+            eta_t = 1.;
         }
-        let v_bias = bias * ref_n;
-
         let eta = eta_i / eta_t;
-        let k = 1.0 - (eta * eta) * (1.0 - i_dot_n * i_dot_n);
-        if k < 0.0 {
-            None
-        } else {
-            let orig: Vec3 = if outside {
-                hit.point - v_bias
-            } else {
-                hit.point + v_bias
-            };
 
-            Some(Ray {
-                origin: orig,
-                direction: (self.direction * eta + (i_dot_n * eta - k.sqrt()) * ref_n).normalize(),
-            })
+        let k = 1. - eta * eta * (1. - c1 * c1);
+        if k < 0. {
+            return None;
         }
+
+        let c2 = k.sqrt();
+        let direction = eta * self.direction + normal * (eta * c1 - c2);
+
+        Some(Ray {
+            origin: hit.point + EPSILON * normal,
+            direction: direction,
+        })
     }
 
     fn moller_trumbore_intersection(
@@ -209,16 +196,19 @@ impl Ray {
         }
 
         // closest to ray origin
-        let t = (-b + disc.sqrt()) / (2.0 * a);
+        let t0 = (-b + disc.sqrt()) / (2.0 * a);
+        let t1 = (-b - disc.sqrt()) / (2.0 * a);
+        
+        let t = t1;
+        
 
-        let origin = self.origin - *position; // translation
-        let hit_point = origin + self.direction * t;
+        let hit_point = self.origin + self.direction * t;
 
-        let normal = hit_point.normalize();
+        let normal = (hit_point - *position).normalize();
 
         Some(RayHit {
             distance: t,
-            point: hit_point + *position, // translation cancel
+            point: hit_point,
             normal,
             material_index,
             ..Default::default()

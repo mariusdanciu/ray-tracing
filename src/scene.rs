@@ -4,7 +4,7 @@ use glam::vec4;
 use rand::rngs::ThreadRng;
 
 use crate::objects::{Material, MaterialType, Object3D, Texture};
-use crate::ray::{Ray, RayHit};
+use crate::ray::{Ray, RayHit, EPSILON};
 
 #[derive(Clone, Default)]
 pub struct Light {
@@ -152,63 +152,53 @@ impl Scene {
             let material = self.materials[hit.material_index];
             let mut albedo = material.albedo;
 
-            
-            //-hit.normal.dot(self.light.direction);
-
             match material.kind {
                 MaterialType::Reflective { roughness } => {
                     if let Some(idx) = material.texture {
                         albedo = self.textures[idx].baricentric_pixel(hit.u, hit.v);
                     }
                     let p_light = self.phong(&ray, &hit, &self.light, albedo, &material);
-                    //let light =
-                    //    self.make_light(albedo, material.emission_power, light, light_angle);
 
                     let r = ray.reflection_ray(hit, roughness, rnd);
-                    
+
                     self.color(r, rnd, depth + 1, p_light, contribution * albedo)
                 }
                 MaterialType::Refractive {
                     transparency,
                     refraction_index,
+                    reflectivity,
                 } => {
-                    let p_light = self.phong(&ray, &hit, &self.light, albedo, &material);
-                    //let light =
-                    //    self.make_light(albedo, material.emission_power, light, light_angle);
                     let mut refraction_color = Vec3::ZERO;
-                    let kr = material.fresnel(ray.direction, hit.normal, refraction_index) as f32;
+                    let kr =
+                        material.fresnel(ray.direction, hit.normal, refraction_index, reflectivity)
+                            as f32;
 
-                    if kr < 1.0 {
-                        if let Some(refraction_ray) = ray.refraction_ray(hit, refraction_index) {
-                            refraction_color = self.color(
-                                refraction_ray,
-                                rnd,
-                                depth + 1,
-                                light_color,
-                                contribution * albedo,
-                            );
-                        }
+                    if let Some(refraction_ray) = ray.refraction_ray(hit, refraction_index) {
+                        refraction_color = self.color(
+                            refraction_ray,
+                            rnd,
+                            depth + 1,
+                            light_color,
+                            contribution * albedo,
+                        );
                     }
 
-                    let outside = ray.direction.dot(hit.normal) < 0.;
-                    let bias = 0.0001 * hit.normal;
-                    let orig: Vec3 = if outside {
-                        hit.point + bias
-                    } else {
-                        hit.point - bias
-                    };
-
                     let reflection_ray = Ray {
-                        origin: orig,
-                        direction: ray.reflect(hit.normal).normalize(),
+                        origin: hit.point + EPSILON * hit.normal,
+                        direction: ray.reflect(hit.normal),
                     };
 
-                    let reflection_color =
-                        self.color(reflection_ray, rnd, depth + 1, p_light, contribution * albedo);
+                    let p_light = self.phong(&reflection_ray, &hit, &self.light, albedo, &material);
+                    let reflection_color = self.color(
+                        reflection_ray,
+                        rnd,
+                        depth + 1,
+                        p_light,
+                        contribution * albedo,
+                    );
 
-                    let color =
-                        reflection_color * kr + refraction_color * (1.0 - kr) * transparency;
-                    color * albedo
+                    let color = reflection_color * kr + refraction_color * (1.0 - kr);
+                    color * transparency
                 }
             }
         } else {

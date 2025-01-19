@@ -22,7 +22,7 @@ pub fn main() -> Result<(), AppError> {
     };
 
     let mut objs = vec![
-        Object3D::new_sphere(Vec3::new(-0.9, 1., -1.3), 0.3, 2),
+        Object3D::new_sphere(Vec3::new(-0.9, 0., 1.), 0.5, 2),
         Object3D::new_sphere(Vec3::new(-0.6, -0.0, -0.2), 0.5, 0),
         //Object3D::new_sphere(Vec3::new(0., -100.5, 0.), 100., 2),
     ];
@@ -45,31 +45,36 @@ pub fn main() -> Result<(), AppError> {
         objs,
         vec![
             Material {
-                ambience: 0.3,
-                diffuse: 0.7,
-                shininess: 6.,
-                specular: 0.9,
-                albedo: Vec3::new(0.3, 0.5, 1.),
-                // kind: MaterialType::Refractive {
-                //     transparency: 0.8,
-                //     refraction_index: 0.9,
-                // },
-                kind: MaterialType::Reflective { roughness: 0.2 },
+                ambience: 0.2,
+                diffuse: 2.3,
+                shininess: 10.,
+                specular: 10.9,
+                albedo: Vec3::new(1., 1., 1.),
+                kind: MaterialType::Refractive {
+                    transparency: 1.,
+                    refraction_index: 1.3,
+                    reflectivity: 0.3
+                },
+                //kind: MaterialType::Reflective { roughness: 0.2 },
                 ..Default::default()
             },
             Material {
                 ambience: 0.1,
-                diffuse: 5.1,
+                diffuse: 2.1,
                 shininess: 10.,
                 specular: 0.9,
                 albedo: Vec3::new(0.4, 0.4, 0.4),
-                kind: MaterialType::Reflective { roughness: 0.5 },
+                kind: MaterialType::Reflective { roughness: 0.7 },
                 texture: Some(0),
                 ..Default::default()
             },
             Material {
-                albedo: Vec3::new(0.9, 0.2, 0.0),
-                kind: MaterialType::Reflective { roughness: 1.0 },
+                ambience: 0.2,
+                diffuse: 0.8,
+                shininess: 2.,
+                specular: 0.9,
+                albedo: Vec3::new(0.0, 0.2, 0.9),
+                kind: MaterialType::Reflective { roughness: 0.2 },
                 ..Default::default()
             },
             Material {
@@ -124,6 +129,7 @@ pub fn main() -> Result<(), AppError> {
                 kind: MaterialType::Refractive {
                     transparency: 1.0,
                     refraction_index: 0.97,
+                    reflectivity: 0.2
                 },
                 emission_power: 0.0,
                 ..Default::default()

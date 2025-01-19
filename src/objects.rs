@@ -24,6 +24,7 @@ pub enum MaterialType {
     Refractive {
         transparency: f32,
         refraction_index: f32,
+        reflectivity: f32,
     },
 }
 
@@ -271,19 +272,48 @@ impl Default for Material {
 }
 
 impl Material {
-    pub fn fresnel(&self, incident: Vec3, normal: Vec3, index: f32) -> f64 {
-        let mut i_dot_n = incident.dot(normal).clamp(-1., 1.) as f64;
+    pub fn fresnel(
+        &self,
+        incident: Vec3,
+        normal: Vec3,
+        refraction_index: f32,
+        reflectivity: f32,
+    ) -> f32 {
+        let n2 = refraction_index;
+        let n1 = 1.0;
+
+        let mut r0 = (n1 - n2) / (n1 + n2);
+        r0 *= r0;
+        let mut cos_x = -normal.dot(incident);
+        if n1 > n2 {
+            let n = n1 / n2;
+            let sin_t2 = n * n * (1.0 - cos_x * cos_x);
+            // Total internal reflection
+            if sin_t2 > 1.0 {
+                return 1.0;
+            }
+            cos_x = (1.0 - sin_t2).sqrt();
+        }
+        let x = 1.0 - cos_x;
+        let ret = r0 + (1.0 - r0) * x * x * x * x * x;
+
+        // adjust reflect multiplier for object reflectivity
+        reflectivity + (1.0 - reflectivity) * ret
+    }
+
+    pub fn _fresnel(&self, incident: Vec3, normal: Vec3, index: f32) -> f32 {
+        let mut i_dot_n = incident.dot(normal).clamp(-1., 1.);
         let mut eta_i = 1.0;
-        let mut eta_t = index as f64;
-        if i_dot_n >= 0.0 {
+        let mut eta_t = index;
+        if i_dot_n < 0.0 {
+            i_dot_n = -i_dot_n;
+        } else {
             eta_i = eta_t;
             eta_t = 1.0;
-        } else {
-            i_dot_n = -i_dot_n;
         }
-        
+        let eta = eta_i / eta_t;
 
-        let sin_t = eta_i / eta_t * (1. - i_dot_n * i_dot_n).max(0.0).sqrt();
+        let sin_t = eta * (1. - i_dot_n * i_dot_n).max(0.0).sqrt();
         if sin_t > 1.0 {
             //Total internal reflection
             return 1.0;
@@ -291,12 +321,10 @@ impl Material {
             let cos_t = (1.0 - sin_t * sin_t).max(0.0).sqrt();
             let cos_i = cos_t.abs();
 
-
-            let et_ci: f64 = eta_t * cos_i;
+            let et_ci = eta_t * cos_i;
             let ei_ct = eta_i * cos_t;
             let ei_ci = eta_i * cos_i;
             let et_ct = eta_t * cos_t;
-
 
             let r_s = (et_ci - ei_ct) / (et_ci + ei_ct);
             let r_p = (ei_ci - et_ct) / (ei_ci + et_ct);
