@@ -115,6 +115,7 @@ impl Scene {
         if !self.difuse {
             self.phong(&ray, &hit, &self.light, albedo, material)
         } else {
+            //println!("light {} emission {} albedo {}", light_color, material.emission_power, albedo);
             light_color + material.emission_power * albedo
         }
     }

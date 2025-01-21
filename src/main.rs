@@ -46,14 +46,14 @@ pub fn main() -> Result<(), AppError> {
         vec![
             Material {
                 ambience: 0.3,
-                diffuse: 0.3,
-                shininess: 10.,
-                specular: 11.,
+                diffuse: 1.3,
+                shininess: 3.,
+                specular: 5.,
                 albedo: Vec3::new(1., 1., 1.),
                 kind: MaterialType::Refractive {
                     transparency: 1.,
                     refraction_index: 1.08,
-                    reflectivity: 0.03,
+                    reflectivity: 0.1,
                 },
                 ..Default::default()
             },
@@ -107,7 +107,7 @@ pub fn main() -> Result<(), AppError> {
         objects: vec![
             Object3D::new_sphere(Vec3::new(0., -100.5, 0.), 100., 0),
             Object3D::new_sphere(Vec3::new(10., 15., -34.), 20.0, 1),
-            Object3D::new_sphere(Vec3::new(0., 0., -0.5), 0.5, 2),
+            Object3D::new_sphere(Vec3::new(0., 0.5, -0.5), 1., 2),
 
         ],
         materials: vec![
@@ -120,7 +120,7 @@ pub fn main() -> Result<(), AppError> {
             Material {
                 albedo: Vec3::new(0.9, 0.5, 0.2),
                 kind: MaterialType::Reflective { roughness: 1.0 },
-                emission_power: 30.0,
+                emission_power: 8.0,
                 ..Default::default()
             },
             Material {

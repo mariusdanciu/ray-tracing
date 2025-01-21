@@ -39,25 +39,17 @@ impl Renderer {
         for pos in 0..chunk.size {
             let ray_dir = camera.ray_directions[pos + chunk.pixel_offset];
 
-            let mut vcolor = Vec4::ZERO;
-
-            //if pos + chunk.pixel_offset == 240400 {
-                vcolor = self
-                    .scene
-                    .pixel(
-                        Ray {
-                            origin: camera.position,
-                            direction: ray_dir,
-                        },
-                        rnd,
-                    )
-                    .clamp(Vec4::ZERO, Vec4::ONE);
-            //}
-            
-            self.accumulated[pos] += vcolor;
+            self.accumulated[pos] += self.scene.pixel(
+                Ray {
+                    origin: camera.position,
+                    direction: ray_dir,
+                },
+                rnd,
+            );
 
             let mut accumulated = self.accumulated[pos];
             accumulated /= self.frame_index as f32;
+            accumulated = accumulated.clamp(Vec4::ZERO, Vec4::ONE);
 
             let color = Scene::to_rgba(accumulated);
 
@@ -139,5 +131,4 @@ impl Renderer {
 
         Ok(())
     }
-
 }
