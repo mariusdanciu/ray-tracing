@@ -136,6 +136,7 @@ impl Ray {
 
             let mut normal = (v2 - v1).cross(v3 - v1).normalize();
             if back_facing {
+                println!("back facing");
                 normal = -normal;
             }
 
