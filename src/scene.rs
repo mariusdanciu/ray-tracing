@@ -46,7 +46,7 @@ impl Scene {
                 direction: vec3(1., -1., -1.).normalize(),
                 power: 1.,
             },
-            ambient_color: vec3(0.1, 0.1, 0.1),
+            ambient_color: vec3(0.0, 0.0, 0.0),
             objects,
             materials,
             textures: vec![],
@@ -88,13 +88,13 @@ impl Scene {
             return None;
         }
 
-        let mut closest_t = f32::MIN;
+        let mut closest_t = f32::MAX;
 
         let mut closest_hit: Option<RayHit> = None;
 
         for obj in self.objects.iter() {
             if let k @ Some(t) = ray.hit(&obj) {
-                if t.distance < 0. && t.distance > closest_t {
+                if t.distance > 0. && t.distance < closest_t {
                     closest_hit = k;
                     closest_t = t.distance;
                 }
@@ -104,11 +104,18 @@ impl Scene {
         closest_hit
     }
 
-    fn make_light(&self, albedo: Vec3, emission_power: f32, light: Vec3, light_angle: f32) -> Vec3 {
+    fn make_light(
+        &self,
+        ray: &Ray,
+        hit: &RayHit,
+        light_color: Vec3,
+        albedo: Vec3,
+        material: &Material,
+    ) -> Vec3 {
         if !self.difuse {
-            albedo * light_angle
+            self.phong(&ray, &hit, &self.light, albedo, material)
         } else {
-            light + albedo * emission_power
+            light_color + material.emission_power * albedo
         }
     }
 
@@ -124,12 +131,12 @@ impl Scene {
         color: Vec3,
         material: &Material,
     ) -> Vec3 {
-        let coeff = -ray.direction.dot(hit.normal);
+        let coeff = hit.normal.dot(-light.direction);
         let ambience = material.ambience * color;
         let diffuse = material.diffuse * coeff.max(0.) * color;
         let shininess = (ray
             .direction
-            .dot(Self::reflect(light.direction, hit.normal)))
+            .dot(Self::reflect(-light.direction, hit.normal)))
         .max(0.)
         .powf(material.shininess);
         let specular = material.specular * shininess * color;
@@ -157,9 +164,10 @@ impl Scene {
                     if let Some(idx) = material.texture {
                         albedo = self.textures[idx].baricentric_pixel(hit.u, hit.v);
                     }
-                    let p_light = self.phong(&ray, &hit, &self.light, albedo, &material);
 
-                    let r = ray.reflection_ray(hit, roughness, rnd);
+                    let p_light = self.make_light(&ray, &hit, light_color, albedo, &material);
+
+                    let r = ray.reflection_ray(hit, roughness, rnd, self.difuse);
 
                     self.color(r, rnd, depth + 1, p_light, contribution * albedo)
                 }
@@ -188,7 +196,7 @@ impl Scene {
                         direction: ray.reflect(hit.normal),
                     };
 
-                    let p_light = self.phong(&reflection_ray, &hit, &self.light, albedo, &material);
+                    let p_light = self.make_light(&ray, &hit, light_color, albedo, &material);
                     let reflection_color = self.color(
                         reflection_ray,
                         rnd,
@@ -197,8 +205,9 @@ impl Scene {
                         contribution * albedo,
                     );
 
-                    let color = reflection_color * kr + refraction_color * (1.0 - kr);
-                    color * transparency
+                    let color =
+                        reflection_color * kr + refraction_color * (1.0 - kr) * transparency;
+                    color * albedo
                 }
             }
         } else {

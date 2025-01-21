@@ -7,7 +7,6 @@ use sdl2::render::Texture;
 use crate::{camera::Camera, ray::Ray, scene::Scene};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
-
 #[derive(Debug, Copy, Clone)]
 struct Chunk {
     size: usize,
@@ -22,14 +21,14 @@ pub struct Renderer {
 
 impl Renderer {
     pub fn new(scene: Scene) -> Renderer {
-        Renderer{
+        Renderer {
             scene: Arc::new(scene),
             accumulated: vec![],
             frame_index: 1,
         }
     }
     fn render_chunk(
-        &mut self, 
+        &mut self,
         camera: &Camera,
         rnd: &mut ThreadRng,
         chunk: Chunk,
@@ -40,22 +39,28 @@ impl Renderer {
         for pos in 0..chunk.size {
             let ray_dir = camera.ray_directions[pos + chunk.pixel_offset];
 
-            let vcolor = self.scene.pixel(
-                Ray {
-                    origin: camera.position,
-                    direction: ray_dir,
-                },
-                rnd,
-            );
+            let mut vcolor = Vec4::ZERO;
 
+            //if pos + chunk.pixel_offset == 240400 {
+                vcolor = self
+                    .scene
+                    .pixel(
+                        Ray {
+                            origin: camera.position,
+                            direction: ray_dir,
+                        },
+                        rnd,
+                    )
+                    .clamp(Vec4::ZERO, Vec4::ONE);
+            //}
+            
             self.accumulated[pos] += vcolor;
 
             let mut accumulated = self.accumulated[pos];
             accumulated /= self.frame_index as f32;
 
-            accumulated = accumulated.clamp(Vec4::ZERO, Vec4::ONE);
-
             let color = Scene::to_rgba(accumulated);
+
             bytes[i] = color.0;
             bytes[i + 1] = color.1;
             bytes[i + 2] = color.2;
@@ -71,7 +76,7 @@ impl Renderer {
         img: &mut Vec<u8>,
         camera: &Camera,
         updated: bool,
-        num_chunks: usize
+        num_chunks: usize,
     ) -> Result<(), String> {
         let w = camera.width;
         let h = camera.height;
@@ -82,7 +87,7 @@ impl Renderer {
         }
 
         if self.frame_index > self.scene.max_frames_rendering {
-            return Ok(())
+            return Ok(());
         }
 
         let img_len = img.len();
@@ -113,7 +118,7 @@ impl Renderer {
                     size: acc_size,
                     pixel_offset: offset,
                 };
-                
+
                 s.render_chunk(camera, &mut rnd, chunk, e.1);
                 s
             })

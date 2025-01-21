@@ -233,7 +233,6 @@ impl Texture {
     }
 
     pub fn pixel(&self, x: u32, y: u32) -> Vec3 {
-        //println!("x {} y {} w {}, h {}", x, y, self.width, self.height);
         let pos = (y * 3 * self.width + x * 3) as usize;
 
         Vec3::new(
@@ -284,7 +283,7 @@ impl Material {
 
         let mut r0 = (n1 - n2) / (n1 + n2);
         r0 *= r0;
-        let mut cos_x = -normal.dot(incident);
+        let mut cos_x = normal.dot(-incident);
         if n1 > n2 {
             let n = n1 / n2;
             let sin_t2 = n * n * (1.0 - cos_x * cos_x);
@@ -302,7 +301,7 @@ impl Material {
     }
 
     pub fn _fresnel(&self, incident: Vec3, normal: Vec3, index: f32) -> f32 {
-        let mut i_dot_n = incident.dot(normal).clamp(-1., 1.);
+        let mut i_dot_n = incident.dot(normal);
         let mut eta_i = 1.0;
         let mut eta_t = index;
         if i_dot_n < 0.0 {
@@ -313,7 +312,7 @@ impl Material {
         }
         let eta = eta_i / eta_t;
 
-        let sin_t = eta * (1. - i_dot_n * i_dot_n).max(0.0).sqrt();
+        let sin_t = eta * (1. - i_dot_n * i_dot_n).sqrt();
         if sin_t > 1.0 {
             //Total internal reflection
             return 1.0;

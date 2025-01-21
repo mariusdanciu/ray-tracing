@@ -20,7 +20,7 @@ pub struct Camera {
 impl Default for Camera {
     fn default() -> Self {
         let pos = Vec3::new(0.0, 0.0, 3.);
-        let dir = Vec3::new(0.0, 0.0, -1.);
+        let look_at = Vec3::new(0.0, 0.0, -1.);
 
         let up = Vec3::new(0., 1., 0.);
         let fov: f32 = 45.0;
@@ -38,7 +38,7 @@ impl Default for Camera {
             near,
             far,
             position: pos,
-            forward_direction: dir,
+            forward_direction: look_at,
             up,
             view,
             inverse_view,
@@ -121,7 +121,7 @@ impl Camera {
             }
         }
 
-        self.view = Mat4::look_at_rh(
+        self.view = Mat4::look_at_lh(
             self.position,
             self.position + self.forward_direction,
             self.up,
@@ -143,14 +143,22 @@ impl Camera {
                 let p_ndc_y = (y as f32) / self.height as f32;
 
                 let p_screen_x = 2.0 * p_ndc_x - 1.;
-                let p_screen_y = 1. - 2.0 * p_ndc_y;
+                let p_screen_y = 2.0 * p_ndc_y - 1.;
 
                 let target = self.inverse_perspective * Vec4::new(p_screen_x, p_screen_y, 1., 1.);
                 let v3 = Vec3::new(target.x, target.y, target.z) / target.w;
-                let ray_direction = self.inverse_view * Vec4::new(v3.x, v3.y, v3.z, 0.0);
+                let world_coords = self.inverse_view * Vec4::new(v3.x, v3.y, v3.z, 0.0);
 
-                self.ray_directions[x + y * self.width as usize] =
+                let world_coords = Vec3::new(world_coords.x, world_coords.y, world_coords.z);
+                let ray_direction = (world_coords - self.position).normalize();
+
+                let ray_dir =
                     Vec3::new(ray_direction.x, ray_direction.y, ray_direction.z).normalize();
+
+                // if x == self.width / 2 && y == self.height / 2 {
+                //     println!("Ray {} {}", ray_dir, self.forward_direction);
+                // }
+                self.ray_directions[x + y * self.width as usize] = ray_dir;
 
                 x += 1;
             }

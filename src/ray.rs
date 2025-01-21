@@ -39,9 +39,15 @@ impl Ray {
         self.direction - (2. * (self.direction.dot(normal))) * normal
     }
 
-    pub fn reflection_ray(&self, hit: RayHit, roughness: f32, rnd: &mut ThreadRng) -> Ray {
+    pub fn reflection_ray(
+        &self,
+        hit: RayHit,
+        roughness: f32,
+        rnd: &mut ThreadRng,
+        diffuse: bool,
+    ) -> Ray {
         let dir: Vec3;
-        if roughness < 1. {
+        if !diffuse {
             dir = self
                 .reflect(
                     hit.normal
@@ -60,10 +66,10 @@ impl Ray {
                 rnd.gen_range(-1.0..1.0),
             );
 
-            dir = -(hit.normal + rnd).normalize();
+            dir = (hit.normal + rnd).normalize();
         }
         Ray {
-            origin: hit.point + hit.normal * 0.0001,
+            origin: hit.point + hit.normal * EPSILON,
             direction: dir,
         }
     }
@@ -92,7 +98,7 @@ impl Ray {
         let direction = eta * self.direction + normal * (eta * c1 - c2);
 
         Some(Ray {
-            origin: hit.point + EPSILON * normal,
+            origin: hit.point - EPSILON * normal,
             direction: direction,
         })
     }
@@ -112,7 +118,7 @@ impl Ray {
         if det > -f32::EPSILON && det < f32::EPSILON {
             return None; // This ray is parallel to this triangle.
         }
-        let back_facing = det > f32::EPSILON;
+        let back_facing = det < f32::EPSILON;
 
         let inv_det = 1.0 / det;
         let s = self.origin - v1;
@@ -131,12 +137,11 @@ impl Ray {
         // At this stage we can compute t to find out where the intersection point is on the line.
         let t = inv_det * e2.dot(s_cross_e1);
 
-        if t < f32::EPSILON {
+        if t > f32::EPSILON {
             let hit_point = self.origin + self.direction * t;
 
             let mut normal = (v2 - v1).cross(v3 - v1).normalize();
             if back_facing {
-                println!("back facing");
                 normal = -normal;
             }
 
@@ -196,16 +201,20 @@ impl Ray {
             return None;
         }
 
-        // closest to ray origin
         let t0 = (-b + disc.sqrt()) / (2.0 * a);
         let t1 = (-b - disc.sqrt()) / (2.0 * a);
-        
+
         let t = t1;
-        
 
-        let hit_point = self.origin + self.direction * t;
+        let h0 = self.origin + self.direction * t0;
+        let h1 = self.origin + self.direction * t1;
 
+        let hit_point = h1;
         let normal = (hit_point - *position).normalize();
+        //   println!(
+        //      "origin {} dir{} t0 {} t1 {} h0 {} h1{} N {} position {}",
+        //      self.origin, self.direction, t0, t1, h0, h1, normal, *position
+        //  );
 
         Some(RayHit {
             distance: t,

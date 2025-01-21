@@ -15,19 +15,19 @@ mod utils;
 
 pub fn main() -> Result<(), AppError> {
     let cube = Cuboid {
-        center: Vec3::new(-0.9, 0., -1.3),
+        center: Vec3::new(-0.4, 0., -1.3),
         length: 1.0,
         width: 1.,
         depth: 1.,
     };
 
     let mut objs = vec![
-        Object3D::new_sphere(Vec3::new(-0.9, 0., 1.), 0.5, 2),
-        Object3D::new_sphere(Vec3::new(-0.6, -0.0, -0.2), 0.5, 0),
-        //Object3D::new_sphere(Vec3::new(0., -100.5, 0.), 100., 2),
+        Object3D::new_sphere(Vec3::new(-1.2, 0., 0.2), 0.5, 0),
+        Object3D::new_sphere(Vec3::new(0., 0., 0.), 0.5, 2),
     ];
 
     objs.append(&mut cube.triangles(3));
+
     objs.push(Object3D::new_triangle(
         Vec3::new(-5.0, -0.5, 5.),
         Vec3::new(5.0, -0.5, 5.),
@@ -45,34 +45,33 @@ pub fn main() -> Result<(), AppError> {
         objs,
         vec![
             Material {
-                ambience: 0.2,
-                diffuse: 2.3,
+                ambience: 0.3,
+                diffuse: 0.3,
                 shininess: 10.,
-                specular: 10.9,
+                specular: 11.,
                 albedo: Vec3::new(1., 1., 1.),
                 kind: MaterialType::Refractive {
                     transparency: 1.,
-                    refraction_index: 1.3,
-                    reflectivity: 0.3
+                    refraction_index: 1.08,
+                    reflectivity: 0.03,
                 },
-                //kind: MaterialType::Reflective { roughness: 0.2 },
                 ..Default::default()
             },
             Material {
                 ambience: 0.1,
-                diffuse: 2.1,
-                shininess: 10.,
-                specular: 0.9,
+                diffuse: 0.1,
+                shininess: 15.,
+                specular: 0.8,
                 albedo: Vec3::new(0.4, 0.4, 0.4),
-                kind: MaterialType::Reflective { roughness: 0.7 },
+                kind: MaterialType::Reflective { roughness: 0.4 },
                 texture: Some(0),
                 ..Default::default()
             },
             Material {
                 ambience: 0.2,
                 diffuse: 0.8,
-                shininess: 2.,
-                specular: 0.9,
+                shininess: 10.,
+                specular: 1.9,
                 albedo: Vec3::new(0.0, 0.2, 0.9),
                 kind: MaterialType::Reflective { roughness: 0.2 },
                 ..Default::default()
@@ -103,21 +102,15 @@ pub fn main() -> Result<(), AppError> {
             direction: vec3(1., -1., -1.).normalize(),
             power: 1.5,
         },
-        ambient_color: vec3(0.0, 0.0, 0.0),
+        ambient_color: vec3(0., 0., 0.),
         difuse: true,
         objects: vec![
-            Object3D::new_sphere(Vec3::new(0., 0., -0.5), 0.5, 0),
-            Object3D::new_sphere(Vec3::new(0., -100.5, 0.), 100., 1),
-            //Sphere::new(Vec3::new(0.5, 0.0, 1.0), 0.5, 2),
-            Object3D::new_sphere(Vec3::new(10., 5., -24.), 10.0, 3),
+            Object3D::new_sphere(Vec3::new(0., -100.5, 0.), 100., 0),
+            Object3D::new_sphere(Vec3::new(10., 15., -34.), 20.0, 1),
+            Object3D::new_sphere(Vec3::new(0., 0., -0.5), 0.5, 2),
+
         ],
         materials: vec![
-            Material {
-                albedo: Vec3::new(0.3, 0.0, 1.0),
-                kind: MaterialType::Reflective { roughness: 1.0 },
-                emission_power: 0.,
-                ..Default::default()
-            },
             Material {
                 albedo: Vec3::new(0.9, 0.9, 0.2),
                 kind: MaterialType::Reflective { roughness: 1.0 },
@@ -125,25 +118,15 @@ pub fn main() -> Result<(), AppError> {
                 ..Default::default()
             },
             Material {
-                albedo: Vec3::new(1.0, 1.0, 1.0),
-                kind: MaterialType::Refractive {
-                    transparency: 1.0,
-                    refraction_index: 0.97,
-                    reflectivity: 0.2
-                },
-                emission_power: 0.0,
-                ..Default::default()
-            },
-            Material {
-                albedo: Vec3::new(0.8, 0.5, 0.2),
+                albedo: Vec3::new(0.9, 0.5, 0.2),
                 kind: MaterialType::Reflective { roughness: 1.0 },
-                emission_power: 10.0,
+                emission_power: 30.0,
                 ..Default::default()
             },
             Material {
-                albedo: Vec3::new(0.4, 0.4, 0.4),
-                kind: MaterialType::Reflective { roughness: 0.2 },
-                emission_power: 0.8,
+                albedo: Vec3::new(0.9, 0.9, 0.2),
+                kind: MaterialType::Reflective { roughness: 1.0 },
+                emission_power: 0.,
                 ..Default::default()
             },
         ],
@@ -155,5 +138,6 @@ pub fn main() -> Result<(), AppError> {
         Vec3::new(-2.8777819, 1.3294921, 2.0364523),
         Vec3::new(0.6106094, -0.19236837, -0.76821935),
     );
+    //let mut camera = Camera::new();
     App::run(&mut camera, &mut renderer)
 }

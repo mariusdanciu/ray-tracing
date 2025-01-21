@@ -19,7 +19,6 @@ impl ImageUtils {
 
         let  bytes: Vec<u8> = Vec::from(k);
 
-        println!("img len {}", bytes.len());
         Ok(Texture{
             path: p,
             width: w,
