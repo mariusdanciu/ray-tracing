@@ -206,10 +206,8 @@ impl Ray {
 
         let t = t1;
 
-        let h0 = self.origin + self.direction * t0;
-        let h1 = self.origin + self.direction * t1;
+        let hit_point = self.origin + self.direction * t;
 
-        let hit_point = h1;
         let normal = (hit_point - *position).normalize();
         //   println!(
         //      "origin {} dir{} t0 {} t1 {} h0 {} h1{} N {} position {}",
