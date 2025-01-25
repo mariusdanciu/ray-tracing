@@ -23,6 +23,7 @@ pub struct Scene {
     pub difuse: bool,
     pub max_ray_bounces: u8,
     pub max_frames_rendering: u32,
+    pub shadow_casting: bool,
 }
 
 impl Default for Scene {
@@ -36,6 +37,7 @@ impl Default for Scene {
             difuse: Default::default(),
             max_ray_bounces: Default::default(),
             max_frames_rendering: 1000,
+            shadow_casting: false,
         }
     }
 }
@@ -173,12 +175,14 @@ impl Scene {
 
                     let mut col = self.color(r, rnd, depth + 1, p_light, contribution * albedo);
 
-                    if let Some(obj) = self.trace_ray(Ray {
-                        origin: hit.point + EPSILON * hit.normal,
-                        direction: -self.light.direction,
-                    }) {
-                        // in the shadow
-                        col *= 0.5;
+                    if self.shadow_casting {
+                        if let Some(obj) = self.trace_ray(Ray {
+                            origin: hit.point + EPSILON * hit.normal,
+                            direction: -self.light.direction,
+                        }) {
+                            // in the shadow
+                            col *= 0.5;
+                        }
                     }
                     col
                 }

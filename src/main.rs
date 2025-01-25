@@ -93,6 +93,7 @@ pub fn main() -> Result<(), AppError> {
             power: 1.5,
         });
     scene1.difuse = false;
+    scene1.shadow_casting = true;
     scene1.max_frames_rendering = 1000;
 
     let scene2 = Scene {
