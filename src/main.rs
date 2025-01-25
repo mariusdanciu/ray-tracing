@@ -58,7 +58,7 @@ pub fn main() -> Result<(), AppError> {
                 ..Default::default()
             },
             Material {
-                ambience: 0.1,
+                ambience: 0.3,
                 diffuse: 0.1,
                 shininess: 15.,
                 specular: 0.8,

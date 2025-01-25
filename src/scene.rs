@@ -2,6 +2,7 @@ use glam::{vec3, Vec3, Vec4};
 
 use glam::vec4;
 use rand::rngs::ThreadRng;
+use sdl2::libc::EOPNOTSUPP;
 
 use crate::objects::{Material, MaterialType, Object3D, Texture};
 use crate::ray::{Ray, RayHit, EPSILON};
@@ -170,7 +171,16 @@ impl Scene {
 
                     let r = ray.reflection_ray(hit, roughness, rnd, self.difuse);
 
-                    self.color(r, rnd, depth + 1, p_light, contribution * albedo)
+                    let mut col = self.color(r, rnd, depth + 1, p_light, contribution * albedo);
+
+                    if let Some(obj) = self.trace_ray(Ray {
+                        origin: hit.point + EPSILON * hit.normal,
+                        direction: -self.light.direction,
+                    }) {
+                        // in the shadow
+                        col *= 0.5;
+                    }
+                    col
                 }
                 MaterialType::Refractive {
                     transparency,
