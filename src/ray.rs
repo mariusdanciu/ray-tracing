@@ -1,7 +1,10 @@
 use glam::{vec3, Vec3};
 use rand::{rngs::ThreadRng, Rng};
 
-use crate::objects::Object3D;
+use crate::{
+    objects::{Material, Object3D},
+    scene::Light,
+};
 
 pub static EPSILON: f32 = 0.0001_f32;
 
@@ -36,7 +39,43 @@ impl Default for RayHit {
 
 impl Ray {
     pub fn reflect(&self, normal: Vec3) -> Vec3 {
-        self.direction - (2. * (self.direction.dot(normal))) * normal
+        self.reflect_vec(self.direction, normal)
+    }
+
+    fn reflect_vec(&self, vec: Vec3, normal: Vec3) -> Vec3 {
+        vec - (2. * (vec.dot(normal))) * normal
+    }
+
+    pub fn blinn_phong(
+        &self,
+        hit: &RayHit,
+        light: &Light,
+        color: Vec3,
+        material: &Material,
+    ) -> Vec3 {
+        let coeff = hit.normal.dot(-light.direction);
+        let ambience = material.ambience * color;
+        let diffuse = material.diffuse * coeff.max(0.) * color;
+        let half_angle = (-self.direction - light.direction).normalize();
+        let shininess = (hit.normal.dot(half_angle))
+            .max(0.)
+            .powf(material.shininess);
+        let specular = material.specular * shininess * color;
+
+        ambience + diffuse + specular
+    }
+    pub fn phong(&self, hit: &RayHit, light: &Light, color: Vec3, material: &Material) -> Vec3 {
+        let coeff = hit.normal.dot(-light.direction);
+        let ambience = material.ambience * color;
+        let diffuse = material.diffuse * coeff.max(0.) * color;
+        let shininess = (self
+            .direction
+            .dot(self.reflect_vec(-light.direction, hit.normal)))
+        .max(0.)
+        .powf(material.shininess);
+        let specular = material.specular * shininess * color;
+
+        ambience + diffuse + specular
     }
 
     pub fn reflection_ray(

@@ -116,36 +116,11 @@ impl Scene {
         material: &Material,
     ) -> Vec3 {
         if !self.difuse {
-            self.phong(&ray, &hit, &self.light, albedo, material)
+            ray.phong(&hit, &self.light, albedo, material)
         } else {
             //println!("light {} emission {} albedo {}", light_color, material.emission_power, albedo);
             light_color + material.emission_power * albedo
         }
-    }
-
-    pub fn reflect(direction: Vec3, normal: Vec3) -> Vec3 {
-        direction - (2. * (direction.dot(normal))) * normal
-    }
-
-    fn phong(
-        &self,
-        ray: &Ray,
-        hit: &RayHit,
-        light: &Light,
-        color: Vec3,
-        material: &Material,
-    ) -> Vec3 {
-        let coeff = hit.normal.dot(-light.direction);
-        let ambience = material.ambience * color;
-        let diffuse = material.diffuse * coeff.max(0.) * color;
-        let shininess = (ray
-            .direction
-            .dot(Self::reflect(-light.direction, hit.normal)))
-        .max(0.)
-        .powf(material.shininess);
-        let specular = material.specular * shininess * color;
-
-        ambience + diffuse + specular
     }
 
     fn color(
