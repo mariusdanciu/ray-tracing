@@ -14,6 +14,12 @@ pub enum Object3D {
         v3: Vec3,
         material_index: usize,
     },
+
+    Box {
+        position: Vec3,
+        dimension: Vec3,
+        material_index: usize,
+    },
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -345,6 +351,14 @@ impl Object3D {
             v1,
             v2,
             v3,
+            material_index,
+        }
+    }
+
+    pub fn new_box(position: Vec3, dimension: Vec3, material_index: usize) -> Object3D {
+        Object3D::Box {
+            position,
+            dimension,
             material_index,
         }
     }

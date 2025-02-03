@@ -23,10 +23,10 @@ pub fn main() -> Result<(), AppError> {
 
     let mut objs = vec![
         Object3D::new_sphere(Vec3::new(-1.2, 0., 0.2), 0.5, 0),
-        Object3D::new_sphere(Vec3::new(0., 0., 0.), 0.5, 2),
+        Object3D::new_sphere(Vec3::new(0., 0.5, 0.), 0.5, 2),
     ];
 
-    objs.append(&mut cube.triangles(3));
+   // objs.append(&mut cube.triangles(3));
 
     objs.push(Object3D::new_triangle(
         Vec3::new(-5.0, -0.5, 5.),
@@ -39,6 +39,12 @@ pub fn main() -> Result<(), AppError> {
         Vec3::new(-5.0, -0.5, -5.),
         Vec3::new(5.0, -0.5, 5.),
         1,
+    ));
+
+    objs.push(Object3D::new_box(
+        vec3(0.0, 0.1, -1.0),
+        vec3(1.5, 0.5, 0.1),
+        3,
     ));
 
     let mut scene1 = Scene::new(
@@ -109,7 +115,6 @@ pub fn main() -> Result<(), AppError> {
             Object3D::new_sphere(Vec3::new(0., -100.5, 0.), 100., 0),
             Object3D::new_sphere(Vec3::new(10., 15., -34.), 20.0, 1),
             Object3D::new_sphere(Vec3::new(0., 0.5, -0.5), 1., 2),
-
         ],
         materials: vec![
             Material {

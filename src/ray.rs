@@ -212,7 +212,57 @@ impl Ray {
                 v3,
                 material_index,
             } => self.moller_trumbore_intersection(*v1, *v2, *v3, *material_index),
+
+            Object3D::Box {
+                position,
+                dimension,
+                material_index,
+            } => self.box_intersection(*dimension, *position, *material_index),
         }
+    }
+
+    fn step(&self, a: Vec3, b: Vec3) -> Vec3 {
+        let x = if b.x < a.x { 0.0 } else { 1.0 };
+        let y = if b.y < a.y { 0.0 } else { 1.0 };
+        let z = if b.z < a.z { 0.0 } else { 1.0 };
+
+        return vec3(x, y, z);
+    }
+
+    fn box_intersection(
+        &self,
+        box_size: Vec3,
+        position: Vec3,
+        material_index: usize,
+    ) -> Option<RayHit> {
+        let m = 1.0 / self.direction;
+        let n = m * (self.origin - position);
+        let k = m.abs() * box_size;
+        let t1 = -n - k;
+        let t2 = -n + k;
+        let t_n = t1.x.max(t1.y).max(t1.z);
+        let t_f = t2.x.min(t2.y).min(t2.z);
+
+        if t_n > t_f || t_f < 0.0 {
+            return None; // no intersection
+        }
+        let mut normal = if t_n > 0.0 {
+            // ray origin ouside the box
+            self.step(vec3(t_n, t_n, t_n), t1)
+        } else {
+            // ray origin inside the box
+            self.step(t2, Vec3::new(t_f, t_f, t_f))
+        };
+        normal *= -self.direction.signum();
+
+        let hit_point = self.origin + self.direction * t_n;
+        Some(RayHit {
+            distance: t_n,
+            point: hit_point,
+            normal,
+            material_index,
+            ..Default::default()
+        })
     }
 
     fn sphere_intersection(
