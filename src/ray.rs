@@ -1,9 +1,10 @@
-use glam::{vec3, Vec3};
+use glam::{vec3, Vec3, Vec3Swizzles, Vec4, Vec4Swizzles};
 use rand::{rngs::ThreadRng, Rng};
 
 use crate::{
     objects::{Material, Object3D},
     scene::Light,
+    utils::geometry,
 };
 
 pub static EPSILON: f32 = 0.0001_f32;
@@ -235,29 +236,43 @@ impl Ray {
         position: Vec3,
         material_index: usize,
     ) -> Option<RayHit> {
-        let m = 1.0 / self.direction;
-        let n = m * (self.origin - position);
-        let k = m.abs() * box_size;
-        let t1 = -n - k;
-        let t2 = -n + k;
-        let t_n = t1.x.max(t1.y).max(t1.z);
-        let t_f = t2.x.min(t2.y).min(t2.z);
+        let rotation = geometry::rotate_x_mat(-10. * std::f32::consts::PI / 180.)
+            * geometry::rotate_y_mat(0. * std::f32::consts::PI / 180.);
 
-        if t_n > t_f || t_f < 0.0 {
+        let ray_dir =
+            (rotation * Vec4::new(self.direction.x, self.direction.y, self.direction.z, 0.0)).xyz();
+        let ray_origin =
+            (rotation * Vec4::new(self.origin.x, self.origin.y, self.origin.z, 1.0)).xyz();
+
+        //let ray_dir = self.direction;
+        //let ray_origin = self.origin;
+
+        let h_box_size = box_size / 2.;
+
+        let b_min = position - h_box_size;
+        let b_max = position + h_box_size;
+
+        let inv = 1.0 / ray_dir;
+
+        let t_min = (b_min - ray_origin) * inv;
+        let t_max = (b_max - ray_origin) * inv;
+
+        let t_enter = t_min.min(t_max);
+        let t_exit = t_min.max(t_max);
+
+        let t_near = t_enter.x.max(t_enter.y).max(t_enter.z);
+        let t_far = t_exit.x.min(t_exit.y).min(t_exit.z);
+
+        if t_near > t_far || t_far < 0.0 {
             return None; // no intersection
         }
-        let mut normal = if t_n > 0.0 {
-            // ray origin ouside the box
-            self.step(vec3(t_n, t_n, t_n), t1)
-        } else {
-            // ray origin inside the box
-            self.step(t2, Vec3::new(t_f, t_f, t_f))
-        };
-        normal *= -self.direction.signum();
+        let mut normal = self.step(vec3(t_near, t_near, t_near), t_enter);
 
-        let hit_point = self.origin + self.direction * t_n;
+        //normal *= -self.direction.signum();
+
+        let hit_point = ray_origin + ray_dir * t_near;
         Some(RayHit {
-            distance: t_n,
+            distance: t_near,
             point: hit_point,
             normal,
             material_index,

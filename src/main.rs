@@ -1,7 +1,7 @@
 use app::App;
 use camera::Camera;
 use glam::{vec3, Vec3};
-use objects::{Cuboid, Material, MaterialType, Object3D};
+use objects::{Material, MaterialType, Object3D};
 use scene::Scene;
 use utils::{errors::AppError, image::ImageUtils};
 
@@ -14,19 +14,12 @@ mod scene;
 mod utils;
 
 pub fn main() -> Result<(), AppError> {
-    let cube = Cuboid {
-        center: Vec3::new(-0.4, 0., -1.3),
-        length: 1.0,
-        width: 1.,
-        depth: 1.,
-    };
 
     let mut objs = vec![
         Object3D::new_sphere(Vec3::new(-1.2, 0., 0.2), 0.5, 0),
-        Object3D::new_sphere(Vec3::new(0., 0.5, 0.), 0.5, 2),
+        Object3D::new_sphere(Vec3::new(0., 0., 0.), 0.5, 2),
+        Object3D::new_sphere(Vec3::new(0., 1.5, -1.), 0.5, 4),
     ];
-
-   // objs.append(&mut cube.triangles(3));
 
     objs.push(Object3D::new_triangle(
         Vec3::new(-5.0, -0.5, 5.),
@@ -42,8 +35,8 @@ pub fn main() -> Result<(), AppError> {
     ));
 
     objs.push(Object3D::new_box(
-        vec3(0.0, 0.1, -1.0),
-        vec3(1.5, 0.5, 0.1),
+        vec3(0.0, 0.4, -1.0),
+        vec3(1.1, 1., 1.),
         3,
     ));
 
@@ -89,6 +82,15 @@ pub fn main() -> Result<(), AppError> {
                 kind: MaterialType::Reflective { roughness: 0.2 },
                 ..Default::default()
             },
+            Material {
+                ambience: 0.2,
+                diffuse: 0.8,
+                shininess: 120.,
+                specular: 5.0,
+                albedo: Vec3::new(1.0, 0.1, 0.0),
+                kind: MaterialType::Reflective { roughness: 0.2 },
+                ..Default::default()
+            },
         ],
     );
 
@@ -99,7 +101,7 @@ pub fn main() -> Result<(), AppError> {
             power: 1.5,
         });
     scene1.difuse = false;
-    scene1.shadow_casting = true;
+    scene1.shadow_casting = false;
     scene1.max_frames_rendering = 1000;
 
     let scene2 = Scene {

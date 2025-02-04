@@ -1,5 +1,7 @@
 use glam::{Mat4, Vec2, Vec3, Vec4};
 
+use crate::utils::geometry;
+
 #[derive(Debug, Clone)]
 pub struct Camera {
     pub width: usize,
@@ -72,16 +74,6 @@ impl Camera {
         }
     }
 
-    pub fn rotate_y_mat(o: f32) -> Mat4 {
-        let (s, c) = f32::sin_cos(o);
-        Mat4::from_cols_array(&[c, 0., s, 0., 0., 1., 0., 0., -s, 0., c, 0., 0., 0., 0., 1.])
-    }
-
-    pub fn rotate_x_mat(o: f32) -> Mat4 {
-        let (s, c) = f32::sin_cos(o);
-        Mat4::from_cols_array(&[1., 0., 0., 0., 0., c, -s, 0., 0., s, c, 0., 0., 0., 0., 1.])
-    }
-
     pub fn update(&mut self, events: Vec<CameraEvent>, ts: f32) {
         let right_direction = self.forward_direction.cross(self.up);
         let speed = 10.;
@@ -105,8 +97,10 @@ impl Camera {
                     let yaw_delta = delta.x * rotation_speed;
 
                     let rotation =
-                        Camera::rotate_x_mat(pitch_delta as f32 * std::f32::consts::PI / 180.)
-                            * Camera::rotate_y_mat(yaw_delta as f32 * std::f32::consts::PI / 180.);
+                        geometry::rotate_x_mat(pitch_delta as f32 * std::f32::consts::PI / 180.)
+                            * geometry::rotate_y_mat(
+                                yaw_delta as f32 * std::f32::consts::PI / 180.,
+                            );
 
                     let fd = rotation
                         * Vec4::new(
