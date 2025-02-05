@@ -1,8 +1,8 @@
-use std::sync::Arc;
+use std::{sync::Arc, time::Instant};
 
 use glam::Vec4;
 use rand::rngs::ThreadRng;
-use sdl2::render::Texture;
+use sdl2::{render::Texture, timer::Timer};
 
 use crate::{camera::Camera, ray::Ray, scene::Scene};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
@@ -33,6 +33,7 @@ impl Renderer {
         rnd: &mut ThreadRng,
         chunk: Chunk,
         bytes: &mut [u8],
+        start_time: Instant
     ) {
         let mut i = 0;
 
@@ -45,6 +46,7 @@ impl Renderer {
                     direction: ray_dir,
                 },
                 rnd,
+                start_time
             );
 
             let mut accumulated = self.accumulated[pos];
@@ -69,6 +71,7 @@ impl Renderer {
         camera: &Camera,
         updated: bool,
         num_chunks: usize,
+        start_time: Instant
     ) -> Result<(), String> {
         let w = camera.width;
         let h = camera.height;
@@ -111,7 +114,7 @@ impl Renderer {
                     pixel_offset: offset,
                 };
 
-                s.render_chunk(camera, &mut rnd, chunk, e.1);
+                s.render_chunk(camera, &mut rnd, chunk, e.1, start_time);
                 s
             })
             .collect();

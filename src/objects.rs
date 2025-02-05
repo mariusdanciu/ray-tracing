@@ -1,4 +1,6 @@
-use glam::{vec3, Vec3, Vec4};
+use std::time::Instant;
+
+use glam::{vec3, Mat4, Vec3, Vec4};
 
 #[derive(Debug, Copy, Clone)]
 pub enum Object3D {
@@ -19,6 +21,7 @@ pub enum Object3D {
         position: Vec3,
         dimension: Vec3,
         material_index: usize,
+        transform: fn(Instant) -> Mat4
     },
 }
 
@@ -173,11 +176,12 @@ impl Object3D {
         }
     }
 
-    pub fn new_box(position: Vec3, dimension: Vec3, material_index: usize) -> Object3D {
+    pub fn new_box(position: Vec3, dimension: Vec3, material_index: usize, transform: fn(Instant) -> Mat4) -> Object3D {
         Object3D::Box {
             position,
             dimension,
             material_index,
+            transform, 
         }
     }
 }

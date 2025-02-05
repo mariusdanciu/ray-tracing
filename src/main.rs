@@ -1,9 +1,11 @@
+use std::time::Instant;
+
 use app::App;
 use camera::Camera;
-use glam::{vec3, Vec3};
+use glam::{vec3, Mat4, Vec3};
 use objects::{Material, MaterialType, Object3D};
 use scene::Scene;
-use utils::{errors::AppError, image::ImageUtils};
+use utils::{errors::AppError, geometry, image::ImageUtils};
 
 mod app;
 mod camera;
@@ -13,8 +15,19 @@ mod renderer;
 mod scene;
 mod utils;
 
-pub fn main() -> Result<(), AppError> {
+fn translate(p: Vec3) -> Mat4 {
+    Mat4::from_translation(p)
+}
+fn rotate(start_time: Instant) -> Mat4 {
+    //let speed = 0.1;
+    //let time = start_time.elapsed().as_millis() as f32;
+    //println!("{}", time);
 
+    return translate(vec3(0., 0.5, -1.))
+        * ((geometry::rotate_x_mat(-20. * std::f32::consts::PI / 180.)
+            * geometry::rotate_y_mat(45. * std::f32::consts::PI / 180.)));
+}
+pub fn main() -> Result<(), AppError> {
     let mut objs = vec![
         Object3D::new_sphere(Vec3::new(-1.2, 0., 0.2), 0.5, 0),
         Object3D::new_sphere(Vec3::new(0., 0., 0.), 0.5, 2),
@@ -35,9 +48,10 @@ pub fn main() -> Result<(), AppError> {
     ));
 
     objs.push(Object3D::new_box(
-        vec3(0.0, 0.4, -1.0),
-        vec3(1.1, 1., 1.),
+        vec3(0.0, 0.5, -1.0),
+        vec3(0.5, 0.5, 0.5),
         3,
+        rotate,
     ));
 
     let mut scene1 = Scene::new(
@@ -57,7 +71,7 @@ pub fn main() -> Result<(), AppError> {
                 ..Default::default()
             },
             Material {
-                ambience: 0.3,
+                ambience: 0.5,
                 diffuse: 0.1,
                 shininess: 15.,
                 specular: 0.8,
@@ -72,14 +86,15 @@ pub fn main() -> Result<(), AppError> {
                 shininess: 20.,
                 specular: 1.9,
                 albedo: Vec3::new(0.0, 0.2, 0.9),
-                kind: MaterialType::Reflective { roughness: 0.2 },
+                kind: MaterialType::Reflective { roughness: 0.4 },
                 ..Default::default()
             },
             Material {
-                shininess: 10.,
-                specular: 1.,
+                shininess: 20.,
+                specular: 2.1,
+                diffuse: 0.8,
                 albedo: Vec3::new(0.4, 0.4, 0.4),
-                kind: MaterialType::Reflective { roughness: 0.2 },
+                kind: MaterialType::Reflective { roughness: 0.1 },
                 ..Default::default()
             },
             Material {
@@ -101,7 +116,7 @@ pub fn main() -> Result<(), AppError> {
             power: 1.5,
         });
     scene1.difuse = false;
-    scene1.shadow_casting = false;
+    scene1.shadow_casting = true;
     scene1.max_frames_rendering = 1000;
 
     let scene2 = Scene {

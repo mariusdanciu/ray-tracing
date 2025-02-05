@@ -45,6 +45,7 @@ impl App {
 
         let mut frame_time = Instant::now();
         let mut timer = Instant::now();
+        let mut start_time = Instant::now();
 
         let nanos = 1000000000. / 60.;
         let mut delta: f64 = 0.;
@@ -230,7 +231,7 @@ impl App {
             }
 
             canvas.clear();
-            renderer.render_par(&mut texture, &mut img, &camera, updated, num_cores)?;
+            renderer.render_par(&mut texture, &mut img, &camera, updated, num_cores, start_time)?;
             canvas.copy(&texture, None, None)?;
             canvas.present();
 

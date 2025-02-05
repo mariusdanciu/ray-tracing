@@ -1,5 +1,8 @@
-use glam::{vec3, Vec3, Vec3Swizzles, Vec4, Vec4Swizzles};
+use std::time::Instant;
+
+use glam::{vec3, vec4, Mat4, Vec3, Vec3Swizzles, Vec4, Vec4Swizzles};
 use rand::{rngs::ThreadRng, Rng};
+use rayon::iter::Inspect;
 
 use crate::{
     objects::{Material, Object3D},
@@ -199,7 +202,7 @@ impl Ray {
         }
     }
 
-    pub fn hit(&self, obj: &Object3D) -> Option<RayHit> {
+    pub fn hit(&self, obj: &Object3D, start_time: Instant) -> Option<RayHit> {
         match obj {
             Object3D::Sphere {
                 position,
@@ -218,7 +221,14 @@ impl Ray {
                 position,
                 dimension,
                 material_index,
-            } => self.box_intersection(*dimension, *position, *material_index),
+                transform,
+            } => self.box_intersection(
+                *dimension,
+                *position,
+                *material_index,
+                *transform,
+                start_time,
+            ),
         }
     }
 
@@ -232,27 +242,88 @@ impl Ray {
 
     fn box_intersection(
         &self,
+        rad: Vec3,
+        position: Vec3,
+        material_index: usize,
+        transform: fn(Instant) -> Mat4,
+        start_time: Instant,
+    ) -> Option<RayHit> {
+        let txi = transform(start_time);
+        let txx = txi.inverse();
+
+        let rd = self.direction;
+        let ro = self.origin;
+        // convert from ray to box space
+        let rdd = (txx * vec4(rd.x, rd.y, rd.z, 0.0)).xyz();
+        let roo = (txx * vec4(ro.x, ro.y, ro.z, 1.0)).xyz();
+
+        // ray-box intersection in box space
+        let m = 1.0 / rdd;
+
+        // more robust
+        let k = vec3(
+            if rdd.x >= 0.0 { rad.x } else { -rad.x },
+            if rdd.y >= 0.0 { rad.y } else { -rad.y },
+            if rdd.z >= 0.0 { rad.z } else { -rad.z },
+        );
+        let t1 = (-roo - k) * m;
+        let t2 = (-roo + k) * m;
+
+        let t_n = t1.x.max(t1.y).max(t1.z);
+        let t_f = t2.x.min(t2.y).min(t2.z);
+
+        // no intersection
+        if t_n > t_f || t_f < 0.0 {
+            return None;
+        }
+
+        // use this instead if your rays origin can be inside the box
+        let (t, mut normal) = if t_n > 0.0 {
+            let p = self.step(vec3(t_n, t_n, t_n), t1);
+            (t_n, p)
+        } else {
+            let p = self.step(t2, vec3(t_f, t_f, t_f));
+            (t_f, p)
+        };
+
+        // add sign to normal and convert to ray space
+        let a = (-rdd.signum()) * normal;
+
+        normal = (txi * vec4(a.x, a.y, a.z, 0.0)).xyz();
+
+        let hit_point = self.origin + self.direction * t;
+
+        Some(RayHit {
+            distance: t_n,
+            point: hit_point,
+            normal,
+            material_index,
+            ..Default::default()
+        })
+    }
+
+    fn box_intersection1(
+        &self,
         box_size: Vec3,
         position: Vec3,
         material_index: usize,
+        transform: fn(Instant) -> Mat4,
+        start_time: Instant,
     ) -> Option<RayHit> {
-        let rotation = geometry::rotate_x_mat(-10. * std::f32::consts::PI / 180.)
-            * geometry::rotate_y_mat(0. * std::f32::consts::PI / 180.);
+        let rotation = transform(start_time);
 
-        let ray_dir =
-            (rotation * Vec4::new(self.direction.x, self.direction.y, self.direction.z, 0.0)).xyz();
-        let ray_origin =
-            (rotation * Vec4::new(self.origin.x, self.origin.y, self.origin.z, 1.0)).xyz();
+        let mut ray_dir = self.direction;
+        let mut ray_origin = self.origin;
 
-        //let ray_dir = self.direction;
-        //let ray_origin = self.origin;
+        ray_dir = (rotation * vec4(ray_dir.x, ray_dir.y, ray_dir.z, 0.)).xyz();
+        ray_origin = (rotation * vec4(ray_origin.x, ray_origin.y, ray_origin.z, 0.)).xyz();
 
         let h_box_size = box_size / 2.;
 
         let b_min = position - h_box_size;
         let b_max = position + h_box_size;
 
-        let inv = 1.0 / ray_dir;
+        let inv = 1.0 / (ray_dir + 0.00001);
 
         let t_min = (b_min - ray_origin) * inv;
         let t_max = (b_max - ray_origin) * inv;
@@ -266,9 +337,9 @@ impl Ray {
         if t_near > t_far || t_far < 0.0 {
             return None; // no intersection
         }
-        let mut normal = self.step(vec3(t_near, t_near, t_near), t_enter);
 
-        //normal *= -self.direction.signum();
+        let mut normal = self.step(vec3(t_near, t_near, t_near), t_enter);
+        // let normal = -ray_dir.signum()*self.step(t_min.yzx(),t_min.xyz())*self.step(t_min.zxy(),t_min.xyz());
 
         let hit_point = ray_origin + ray_dir * t_near;
         Some(RayHit {

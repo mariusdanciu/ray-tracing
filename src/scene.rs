@@ -1,3 +1,5 @@
+use std::time::Instant;
+
 use glam::{vec3, Vec3, Vec4};
 
 use glam::vec4;
@@ -86,7 +88,7 @@ impl Scene {
         s
     }
 
-    fn trace_ray(&self, ray: Ray) -> Option<RayHit> {
+    fn trace_ray(&self, ray: Ray, start_time: Instant) -> Option<RayHit> {
         if self.objects.is_empty() {
             return None;
         }
@@ -96,7 +98,7 @@ impl Scene {
         let mut closest_hit: Option<RayHit> = None;
 
         for obj in self.objects.iter() {
-            if let k @ Some(t) = ray.hit(&obj) {
+            if let k @ Some(t) = ray.hit(&obj, start_time) {
                 if t.distance > 0. && t.distance < closest_t {
                     closest_hit = k;
                     closest_t = t.distance;
@@ -130,11 +132,12 @@ impl Scene {
         depth: u8,
         light_color: Vec3,
         contribution: Vec3,
+        start_time: Instant,
     ) -> Vec3 {
         if depth >= self.max_ray_bounces {
             return light_color;
         }
-        if let Some(hit) = self.trace_ray(ray) {
+        if let Some(hit) = self.trace_ray(ray, start_time) {
             let material = self.materials[hit.material_index];
             let mut albedo = material.albedo;
 
@@ -148,13 +151,24 @@ impl Scene {
 
                     let r = ray.reflection_ray(hit, roughness, rnd, self.difuse);
 
-                    let mut col = self.color(r, rnd, depth + 1, p_light, contribution * albedo);
+                    let mut col = self.color(
+                        r,
+                        rnd,
+                        depth + 1,
+                        p_light,
+                        contribution * albedo,
+                        start_time,
+                    );
+                    
 
                     if self.shadow_casting {
-                        if let Some(obj) = self.trace_ray(Ray {
-                            origin: hit.point + EPSILON * hit.normal,
-                            direction: -self.light.direction,
-                        }) {
+                        if let Some(obj) = self.trace_ray(
+                            Ray {
+                                origin: hit.point + EPSILON * hit.normal,
+                                direction: -self.light.direction,
+                            },
+                            start_time,
+                        ) {
                             // in the shadow
                             col *= 0.5;
                         }
@@ -178,6 +192,7 @@ impl Scene {
                             depth + 1,
                             light_color,
                             contribution * albedo,
+                            start_time,
                         );
                     }
 
@@ -193,6 +208,7 @@ impl Scene {
                         depth + 1,
                         p_light,
                         contribution * albedo,
+                        start_time,
                     );
 
                     let color =
@@ -205,12 +221,12 @@ impl Scene {
         }
     }
 
-    pub fn pixel(&self, ray: Ray, rnd: &mut ThreadRng) -> Vec4 {
+    pub fn pixel(&self, ray: Ray, rnd: &mut ThreadRng, start_time: Instant) -> Vec4 {
         let mut light = Vec3::ZERO; // BLACK
 
         let contribution = Vec3::ONE;
 
-        light = self.color(ray, rnd, 0, light, contribution);
+        light = self.color(ray, rnd, 0, light, contribution, start_time);
 
         vec4(light.x, light.y, light.z, 1.)
     }
