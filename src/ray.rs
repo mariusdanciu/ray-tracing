@@ -202,7 +202,7 @@ impl Ray {
         }
     }
 
-    pub fn hit(&self, obj: &Object3D, start_time: Instant) -> Option<RayHit> {
+    pub fn hit(&self, obj: &Object3D, time: f32) -> Option<RayHit> {
         match obj {
             Object3D::Sphere {
                 position,
@@ -222,13 +222,7 @@ impl Ray {
                 dimension,
                 material_index,
                 transform,
-            } => self.box_intersection(
-                *dimension,
-                *position,
-                *material_index,
-                *transform,
-                start_time,
-            ),
+            } => self.box_intersection(*dimension, *position, *material_index, *transform, time),
         }
     }
 
@@ -240,15 +234,15 @@ impl Ray {
         return vec3(x, y, z);
     }
 
-    fn box_intersection(
+    fn box_intersection1(
         &self,
         rad: Vec3,
         position: Vec3,
         material_index: usize,
-        transform: fn(Instant) -> Mat4,
-        start_time: Instant,
+        transform: fn(Vec3, f32) -> Mat4,
+        time: f32,
     ) -> Option<RayHit> {
-        let txi = transform(start_time);
+        let txi = transform(position, time);
         let txx = txi.inverse();
 
         let rd = self.direction;
@@ -293,37 +287,44 @@ impl Ray {
 
         let hit_point = self.origin + self.direction * t;
 
+        let opos = (txx * vec4(hit_point.x, hit_point.y, hit_point.z, 1.0)).xyz() ;
+
+        let u_v = ((a.x.abs() * (opos.yz()) + a.y.abs() * (opos.zx()) + a.z.abs() * (opos.xy())));
+
+
         Some(RayHit {
             distance: t_n,
             point: hit_point,
             normal,
             material_index,
-            ..Default::default()
+            u: u_v.x,
+            v: u_v.y,
         })
     }
 
-    fn box_intersection1(
+    fn box_intersection(
         &self,
         box_size: Vec3,
         position: Vec3,
         material_index: usize,
-        transform: fn(Instant) -> Mat4,
-        start_time: Instant,
+        transform: fn(Vec3, f32) -> Mat4,
+        time: f32,
     ) -> Option<RayHit> {
-        let rotation = transform(start_time);
+        let rotation = transform(position, time);
+        let inv_t = rotation.inverse();
 
         let mut ray_dir = self.direction;
         let mut ray_origin = self.origin;
 
-        ray_dir = (rotation * vec4(ray_dir.x, ray_dir.y, ray_dir.z, 0.)).xyz();
-        ray_origin = (rotation * vec4(ray_origin.x, ray_origin.y, ray_origin.z, 0.)).xyz();
+        ray_dir = (inv_t * vec4(ray_dir.x, ray_dir.y, ray_dir.z, 0.)).xyz();
+        ray_origin = (inv_t * vec4(ray_origin.x, ray_origin.y, ray_origin.z, 1.)).xyz();
 
-        let h_box_size = box_size / 2.;
+        let h_box_size = box_size;
 
-        let b_min = position - h_box_size;
-        let b_max = position + h_box_size;
+        let b_min = -h_box_size;
+        let b_max = h_box_size;
 
-        let inv = 1.0 / (ray_dir + 0.00001);
+        let inv = 1.0 / ray_dir;
 
         let t_min = (b_min - ray_origin) * inv;
         let t_max = (b_max - ray_origin) * inv;
@@ -338,16 +339,28 @@ impl Ray {
             return None; // no intersection
         }
 
-        let mut normal = self.step(vec3(t_near, t_near, t_near), t_enter);
-        // let normal = -ray_dir.signum()*self.step(t_min.yzx(),t_min.xyz())*self.step(t_min.zxy(),t_min.xyz());
+        let a = -ray_dir.signum() * self.step(vec3(t_near, t_near, t_near), t_enter);
 
-        let hit_point = ray_origin + ray_dir * t_near;
+        let normal = (rotation * vec4(a.x, a.y, a.z, 0.0)).xyz();
+
+        let hit_point = self.origin + self.direction * t_near;
+
+        let opos = (inv_t * vec4(hit_point.x, hit_point.y, hit_point.z, 1.0)).xyz();
+        let onor = a;
+
+        let u_v =
+            onor.x.abs() * (opos.yz()) + onor.y.abs() * (opos.zx()) + onor.z.abs() * (opos.xy());
+
+        if (u_v.x > 1. || u_v.x < 0. || u_v.y > 1. || u_v.y < 0.) {
+            //println!("Larger {}", u_v);
+        }
         Some(RayHit {
             distance: t_near,
             point: hit_point,
             normal,
             material_index,
-            ..Default::default()
+            u: u_v.x,
+            v: u_v.y,
         })
     }
 

@@ -21,7 +21,7 @@ pub enum Object3D {
         position: Vec3,
         dimension: Vec3,
         material_index: usize,
-        transform: fn(Instant) -> Mat4
+        transform: fn(Vec3, f32) -> Mat4,
     },
 }
 
@@ -53,9 +53,24 @@ impl Texture {
         }
     }
 
-    pub fn baricentric_pixel(&self, u: f32, v: f32) -> Vec3 {
-        let x = (self.width as f32 * u) as u32;
-        let y = (self.height as f32 * v) as u32;
+    fn textel(&self, p: f32) -> f32 {
+        if p < 0. {
+            return 1. - (p.ceil() - p).abs();
+        } else if p > 1. {
+            return (p - p.floor());
+        }
+        p
+    }
+
+    pub fn from_uv(&self, u: f32, v: f32) -> Vec3 {
+        let uu = self.textel(u);
+        let vv = self.textel(v);
+
+        if uu > 1. || vv > 1. {
+            println!("UV {} {} ", uu, vv);
+        }
+        let x = ((self.width - 1) as f32 * uu) as u32;
+        let y = ((self.height - 1) as f32 * vv) as u32;
         self.pixel(x, y)
     }
 
@@ -176,12 +191,17 @@ impl Object3D {
         }
     }
 
-    pub fn new_box(position: Vec3, dimension: Vec3, material_index: usize, transform: fn(Instant) -> Mat4) -> Object3D {
+    pub fn new_box(
+        position: Vec3,
+        dimension: Vec3,
+        material_index: usize,
+        transform: fn(Vec3, f32) -> Mat4,
+    ) -> Object3D {
         Object3D::Box {
             position,
             dimension,
             material_index,
-            transform, 
+            transform,
         }
     }
 }

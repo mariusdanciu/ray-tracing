@@ -18,20 +18,20 @@ mod utils;
 fn translate(p: Vec3) -> Mat4 {
     Mat4::from_translation(p)
 }
-fn rotate(start_time: Instant) -> Mat4 {
+fn rotate(position: Vec3, time: f32) -> Mat4 {
     //let speed = 0.1;
     //let time = start_time.elapsed().as_millis() as f32;
     //println!("{}", time);
 
-    return translate(vec3(0., 0.5, -1.))
-        * ((geometry::rotate_x_mat(-20. * std::f32::consts::PI / 180.)
-            * geometry::rotate_y_mat(45. * std::f32::consts::PI / 180.)));
+    return translate(position)
+        * (geometry::rotate_x_mat(0. * std::f32::consts::PI / 180.)
+            * geometry::rotate_y_mat(-20. * std::f32::consts::PI / 180.));
 }
 pub fn main() -> Result<(), AppError> {
     let mut objs = vec![
         Object3D::new_sphere(Vec3::new(-1.2, 0., 0.2), 0.5, 0),
         Object3D::new_sphere(Vec3::new(0., 0., 0.), 0.5, 2),
-        Object3D::new_sphere(Vec3::new(0., 1.5, -1.), 0.5, 4),
+        Object3D::new_sphere(Vec3::new(0., 1.7, -1.), 0.5, 4),
     ];
 
     objs.push(Object3D::new_triangle(
@@ -48,8 +48,8 @@ pub fn main() -> Result<(), AppError> {
     ));
 
     objs.push(Object3D::new_box(
-        vec3(0.0, 0.5, -1.0),
-        vec3(0.5, 0.5, 0.5),
+        vec3(0.0, -0.3, -1.5),
+        vec3(0.5, 0.3, 1.3),
         3,
         rotate,
     ));
@@ -90,20 +90,22 @@ pub fn main() -> Result<(), AppError> {
                 ..Default::default()
             },
             Material {
+                ambience: 0.4,
                 shininess: 20.,
                 specular: 2.1,
                 diffuse: 0.8,
-                albedo: Vec3::new(0.4, 0.4, 0.4),
-                kind: MaterialType::Reflective { roughness: 0.1 },
+                albedo: Vec3::new(0.5, 0.5, 0.5),
+                kind: MaterialType::Reflective { roughness: 1. },
+                texture: Some(1),
                 ..Default::default()
             },
             Material {
-                ambience: 0.2,
-                diffuse: 0.8,
-                shininess: 120.,
-                specular: 5.0,
-                albedo: Vec3::new(1.0, 0.1, 0.0),
-                kind: MaterialType::Reflective { roughness: 0.2 },
+                ambience: 0.1,
+                diffuse: 1.8,
+                shininess: 20.,
+                specular: 1.9,
+                albedo: Vec3::new(0.5, 0.2, 0.9),
+                kind: MaterialType::Reflective { roughness: 0.4 },
                 ..Default::default()
             },
         ],
@@ -111,12 +113,13 @@ pub fn main() -> Result<(), AppError> {
 
     scene1 = scene1
         .with_texture(ImageUtils::load_image("./resources/chess.png")?)
+        .with_texture(ImageUtils::load_image("./resources/stone2.jpg")?)
         .with_light(scene::Light {
             direction: vec3(-1., -1., -1.).normalize(),
             power: 1.5,
         });
     scene1.difuse = false;
-    scene1.shadow_casting = true;
+    scene1.shadow_casting = false;
     scene1.max_frames_rendering = 1000;
 
     let scene2 = Scene {

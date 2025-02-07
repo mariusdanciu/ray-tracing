@@ -231,7 +231,7 @@ impl App {
             }
 
             canvas.clear();
-            renderer.render_par(&mut texture, &mut img, &camera, updated, num_cores, start_time)?;
+            renderer.render_par(&mut texture, &mut img, &camera, updated, num_cores, ts)?;
             canvas.copy(&texture, None, None)?;
             canvas.present();
 

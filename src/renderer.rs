@@ -33,7 +33,7 @@ impl Renderer {
         rnd: &mut ThreadRng,
         chunk: Chunk,
         bytes: &mut [u8],
-        start_time: Instant
+        time: f32
     ) {
         let mut i = 0;
 
@@ -46,7 +46,7 @@ impl Renderer {
                     direction: ray_dir,
                 },
                 rnd,
-                start_time
+                time
             );
 
             let mut accumulated = self.accumulated[pos];
@@ -71,7 +71,7 @@ impl Renderer {
         camera: &Camera,
         updated: bool,
         num_chunks: usize,
-        start_time: Instant
+        time: f32
     ) -> Result<(), String> {
         let w = camera.width;
         let h = camera.height;
@@ -114,7 +114,7 @@ impl Renderer {
                     pixel_offset: offset,
                 };
 
-                s.render_chunk(camera, &mut rnd, chunk, e.1, start_time);
+                s.render_chunk(camera, &mut rnd, chunk, e.1, time);
                 s
             })
             .collect();

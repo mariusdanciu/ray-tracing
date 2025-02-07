@@ -88,19 +88,19 @@ impl Scene {
         s
     }
 
-    fn trace_ray(&self, ray: Ray, start_time: Instant) -> Option<RayHit> {
+    fn trace_ray(&self, ray: Ray, time: f32) -> Option<(RayHit, Object3D)> {
         if self.objects.is_empty() {
             return None;
         }
 
         let mut closest_t = f32::MAX;
 
-        let mut closest_hit: Option<RayHit> = None;
+        let mut closest_hit: Option<(RayHit, Object3D)> = None;
 
         for obj in self.objects.iter() {
-            if let k @ Some(t) = ray.hit(&obj, start_time) {
+            if let Some(t) = ray.hit(&obj, time) {
                 if t.distance > 0. && t.distance < closest_t {
-                    closest_hit = k;
+                    closest_hit = Some((t, *obj));
                     closest_t = t.distance;
                 }
             }
@@ -132,34 +132,33 @@ impl Scene {
         depth: u8,
         light_color: Vec3,
         contribution: Vec3,
-        start_time: Instant,
+        time: f32,
     ) -> Vec3 {
         if depth >= self.max_ray_bounces {
             return light_color;
         }
-        if let Some(hit) = self.trace_ray(ray, start_time) {
+        if let Some((hit, object)) = self.trace_ray(ray, time) {
             let material = self.materials[hit.material_index];
             let mut albedo = material.albedo;
 
             match material.kind {
                 MaterialType::Reflective { roughness } => {
                     if let Some(idx) = material.texture {
-                        albedo = self.textures[idx].baricentric_pixel(hit.u, hit.v);
+                        if let Object3D::Triangle { .. } = object {
+                            albedo = self.textures[idx].from_uv(hit.u, hit.v);
+                        } else {
+                            if let Object3D::Box { .. } = object {
+                                albedo = self.textures[idx].from_uv(hit.u, hit.v);
+                            }
+                        }
                     }
 
                     let p_light = self.make_light(&ray, &hit, light_color, albedo, &material);
 
                     let r = ray.reflection_ray(hit, roughness, rnd, self.difuse);
 
-                    let mut col = self.color(
-                        r,
-                        rnd,
-                        depth + 1,
-                        p_light,
-                        contribution * albedo,
-                        start_time,
-                    );
-                    
+                    let mut col =
+                        self.color(r, rnd, depth + 1, p_light, contribution * albedo, time);
 
                     if self.shadow_casting {
                         if let Some(obj) = self.trace_ray(
@@ -167,7 +166,7 @@ impl Scene {
                                 origin: hit.point + EPSILON * hit.normal,
                                 direction: -self.light.direction,
                             },
-                            start_time,
+                            time,
                         ) {
                             // in the shadow
                             col *= 0.5;
@@ -192,7 +191,7 @@ impl Scene {
                             depth + 1,
                             light_color,
                             contribution * albedo,
-                            start_time,
+                            time,
                         );
                     }
 
@@ -208,7 +207,7 @@ impl Scene {
                         depth + 1,
                         p_light,
                         contribution * albedo,
-                        start_time,
+                        time,
                     );
 
                     let color =
@@ -221,12 +220,12 @@ impl Scene {
         }
     }
 
-    pub fn pixel(&self, ray: Ray, rnd: &mut ThreadRng, start_time: Instant) -> Vec4 {
+    pub fn pixel(&self, ray: Ray, rnd: &mut ThreadRng, time: f32) -> Vec4 {
         let mut light = Vec3::ZERO; // BLACK
 
         let contribution = Vec3::ONE;
 
-        light = self.color(ray, rnd, 0, light, contribution, start_time);
+        light = self.color(ray, rnd, 0, light, contribution, time);
 
         vec4(light.x, light.y, light.z, 1.)
     }
