@@ -31,7 +31,7 @@ pub fn main() -> Result<(), AppError> {
     let mut objs = vec![
         Object3D::new_sphere(Vec3::new(-1.2, 0., 0.2), 0.5, 0),
         Object3D::new_sphere(Vec3::new(0., 0., 0.), 0.5, 2),
-        Object3D::new_sphere(Vec3::new(0., 1.7, -1.), 0.5, 4),
+        Object3D::new_sphere(Vec3::new(0., 0.5, -1.), 0.5, 4),
     ];
 
     objs.push(Object3D::new_triangle(
@@ -91,8 +91,8 @@ pub fn main() -> Result<(), AppError> {
             },
             Material {
                 ambience: 0.4,
-                shininess: 20.,
-                specular: 2.1,
+                shininess: 30.,
+                specular: 1.1,
                 diffuse: 0.8,
                 albedo: Vec3::new(0.5, 0.5, 0.5),
                 kind: MaterialType::Reflective { roughness: 1. },
@@ -113,7 +113,7 @@ pub fn main() -> Result<(), AppError> {
 
     scene1 = scene1
         .with_texture(ImageUtils::load_image("./resources/chess.png")?)
-        .with_texture(ImageUtils::load_image("./resources/stone2.jpg")?)
+        .with_texture(ImageUtils::load_image("./resources/stone3.jpg")?)
         .with_light(scene::Light {
             direction: vec3(-1., -1., -1.).normalize(),
             power: 1.5,
