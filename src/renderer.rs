@@ -33,27 +33,40 @@ impl Renderer {
         rnd: &mut ThreadRng,
         chunk: Chunk,
         bytes: &mut [u8],
-        time: f32
+        time: f32,
     ) {
         let mut i = 0;
 
         for pos in 0..chunk.size {
             let ray_dir = camera.ray_directions[pos + chunk.pixel_offset];
 
-            self.accumulated[pos] += self.scene.pixel(
-                Ray {
-                    origin: camera.position,
-                    direction: ray_dir,
-                },
-                rnd,
-                time
-            );
+            let color = if self.scene.difuse {
+                self.accumulated[pos] += self.scene.pixel(
+                    Ray {
+                        origin: camera.position,
+                        direction: ray_dir,
+                    },
+                    rnd,
+                    time,
+                );
 
-            let mut accumulated = self.accumulated[pos];
-            accumulated /= self.frame_index as f32;
-            accumulated = accumulated.clamp(Vec4::ZERO, Vec4::ONE);
+                let mut accumulated = self.accumulated[pos];
+                accumulated /= self.frame_index as f32;
+                accumulated = accumulated.clamp(Vec4::ZERO, Vec4::ONE);
 
-            let color = Scene::to_rgba(accumulated);
+                Scene::to_rgba(accumulated)
+            } else {
+                let c = self.scene.pixel(
+                    Ray {
+                        origin: camera.position,
+                        direction: ray_dir,
+                    },
+                    rnd,
+                    time,
+                );
+                self.accumulated[pos] = c.clamp(Vec4::ZERO, Vec4::ONE);
+                Scene::to_rgba(self.accumulated[pos])
+            };
 
             bytes[i] = color.0;
             bytes[i + 1] = color.1;
@@ -71,7 +84,7 @@ impl Renderer {
         camera: &Camera,
         updated: bool,
         num_chunks: usize,
-        time: f32
+        time: f32,
     ) -> Result<(), String> {
         let w = camera.width;
         let h = camera.height;
@@ -81,7 +94,9 @@ impl Renderer {
             self.frame_index = 1;
         }
 
-        if self.frame_index > self.scene.max_frames_rendering {
+        if self.frame_index > self.scene.max_frames_rendering
+            || (self.frame_index > 1 && !self.scene.difuse)
+        {
             return Ok(());
         }
 

@@ -48,7 +48,7 @@ pub fn main() -> Result<(), AppError> {
     ));
 
     objs.push(Object3D::new_box(
-        vec3(0.0, -0.3, -1.5),
+        vec3(0.0, -0.2, -1.5),
         vec3(0.5, 0.3, 1.3),
         3,
         rotate,
@@ -58,7 +58,7 @@ pub fn main() -> Result<(), AppError> {
         objs,
         vec![
             Material {
-                ambience: 0.3,
+                ambience: 0.4,
                 diffuse: 1.3,
                 shininess: 3.,
                 specular: 5.,
@@ -76,17 +76,17 @@ pub fn main() -> Result<(), AppError> {
                 shininess: 15.,
                 specular: 0.8,
                 albedo: Vec3::new(0.4, 0.4, 0.4),
-                kind: MaterialType::Reflective { roughness: 0.4 },
+                kind: MaterialType::Reflective { roughness: 0.7 },
                 texture: Some(0),
                 ..Default::default()
             },
             Material {
-                ambience: 0.2,
+                ambience: 0.4,
                 diffuse: 1.8,
                 shininess: 20.,
                 specular: 1.9,
                 albedo: Vec3::new(0.0, 0.2, 0.9),
-                kind: MaterialType::Reflective { roughness: 0.4 },
+                kind: MaterialType::Reflective { roughness: 1. },
                 ..Default::default()
             },
             Material {
@@ -95,17 +95,17 @@ pub fn main() -> Result<(), AppError> {
                 specular: 1.1,
                 diffuse: 0.8,
                 albedo: Vec3::new(0.5, 0.5, 0.5),
-                kind: MaterialType::Reflective { roughness: 1. },
+                kind: MaterialType::Reflective { roughness: 0.7 },
                 texture: Some(1),
                 ..Default::default()
             },
             Material {
-                ambience: 0.1,
+                ambience: 0.4,
                 diffuse: 1.8,
                 shininess: 20.,
                 specular: 1.9,
                 albedo: Vec3::new(0.5, 0.2, 0.9),
-                kind: MaterialType::Reflective { roughness: 0.4 },
+                kind: MaterialType::Reflective { roughness: 0.3 },
                 ..Default::default()
             },
         ],
@@ -119,7 +119,7 @@ pub fn main() -> Result<(), AppError> {
             power: 1.5,
         });
     scene1.difuse = false;
-    scene1.shadow_casting = false;
+    scene1.shadow_casting = true;
     scene1.max_frames_rendering = 1000;
 
     let scene2 = Scene {
@@ -159,7 +159,7 @@ pub fn main() -> Result<(), AppError> {
         ..Default::default()
     };
 
-    let mut renderer = renderer::Renderer::new(scene1);
+    let mut renderer = renderer::Renderer::new(scene2);
     let mut camera = Camera::new_with_pos(
         Vec3::new(-2.8777819, 1.3294921, 2.0364523),
         Vec3::new(0.6106094, -0.19236837, -0.76821935),

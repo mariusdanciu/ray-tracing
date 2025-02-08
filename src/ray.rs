@@ -94,12 +94,12 @@ impl Ray {
             dir = self
                 .reflect(
                     hit.normal
-                        + roughness
-                            * vec3(
-                                rnd.gen_range(-0.5..0.5),
-                                rnd.gen_range(-0.5..0.5),
-                                rnd.gen_range(-0.5..0.5),
-                            ),
+                        // + roughness
+                        //     * vec3(
+                        //         rnd.gen_range(-0.5..0.5),
+                        //         rnd.gen_range(-0.5..0.5),
+                        //         rnd.gen_range(-0.5..0.5),
+                        //     ),
                 )
                 .normalize();
         } else {

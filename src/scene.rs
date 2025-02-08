@@ -120,7 +120,6 @@ impl Scene {
         if !self.difuse {
             ray.phong(&hit, &self.light, albedo, material)
         } else {
-            //println!("light {} emission {} albedo {}", light_color, material.emission_power, albedo);
             light_color + material.emission_power * albedo
         }
     }
@@ -144,21 +143,21 @@ impl Scene {
             match material.kind {
                 MaterialType::Reflective { roughness } => {
                     if let Some(idx) = material.texture {
-                        if let Object3D::Triangle { .. } = object {
-                            albedo = self.textures[idx].from_uv(hit.u, hit.v);
-                        } else {
-                            if let Object3D::Box { .. } = object {
-                                albedo = self.textures[idx].from_uv(hit.u, hit.v);
-                            }
-                        }
+                        albedo = self.textures[idx].from_uv(hit.u, hit.v);
                     }
 
                     let p_light = self.make_light(&ray, &hit, light_color, albedo, &material);
 
                     let r = ray.reflection_ray(hit, roughness, rnd, self.difuse);
 
-                    let mut col =
+                    let reflected_col =
                         self.color(r, rnd, depth + 1, p_light, contribution * albedo, time);
+
+                    let mut col = if self.difuse {
+                        reflected_col
+                    } else {
+                        p_light * (roughness) + p_light * reflected_col * (1. - roughness)
+                    };
 
                     if self.shadow_casting {
                         if let Some(obj) = self.trace_ray(
@@ -212,7 +211,7 @@ impl Scene {
 
                     let color =
                         reflection_color * kr + refraction_color * (1.0 - kr) * transparency;
-                    color * albedo
+                    color
                 }
             }
         } else {
