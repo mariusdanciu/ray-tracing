@@ -118,6 +118,7 @@ pub fn main() -> Result<(), AppError> {
             direction: vec3(-1., -1., -1.).normalize(),
             power: 1.5,
         });
+    //scene1.ambient_color = vec3(0.4, 0.7, 1.);
     scene1.difuse = false;
     scene1.shadow_casting = true;
     scene1.max_frames_rendering = 1000;
@@ -159,7 +160,7 @@ pub fn main() -> Result<(), AppError> {
         ..Default::default()
     };
 
-    let mut renderer = renderer::Renderer::new(scene2);
+    let mut renderer = renderer::Renderer::new(scene1);
     let mut camera = Camera::new_with_pos(
         Vec3::new(-2.8777819, 1.3294921, 2.0364523),
         Vec3::new(0.6106094, -0.19236837, -0.76821935),
