@@ -11,6 +11,7 @@ use crate::{
 };
 
 pub static EPSILON: f32 = 0.0001_f32;
+static DEGREES: f32 = std::f32::consts::PI / 180.;
 
 #[derive(Debug, Copy, Clone)]
 pub struct Ray {
@@ -93,13 +94,12 @@ impl Ray {
         if !diffuse {
             dir = self
                 .reflect(
-                    hit.normal
-                        // + roughness
-                        //     * vec3(
-                        //         rnd.gen_range(-0.5..0.5),
-                        //         rnd.gen_range(-0.5..0.5),
-                        //         rnd.gen_range(-0.5..0.5),
-                        //     ),
+                    hit.normal, // + roughness
+                               //     * vec3(
+                               //         rnd.gen_range(-0.5..0.5),
+                               //         rnd.gen_range(-0.5..0.5),
+                               //         rnd.gen_range(-0.5..0.5),
+                               //     ),
                 )
                 .normalize();
         } else {
@@ -219,10 +219,12 @@ impl Ray {
 
             Object3D::Box {
                 position,
+                rotation_axis,
                 dimension,
                 material_index,
-                transform,
-            } => self.box_intersection(*dimension, *position, *material_index, *transform, time),
+            } => {
+                self.box_intersection(*dimension, *position, *rotation_axis, *material_index, time)
+            }
         }
     }
 
@@ -287,10 +289,9 @@ impl Ray {
 
         let hit_point = self.origin + self.direction * t;
 
-        let opos = (txx * vec4(hit_point.x, hit_point.y, hit_point.z, 1.0)).xyz() ;
+        let opos = (txx * vec4(hit_point.x, hit_point.y, hit_point.z, 1.0)).xyz();
 
-        let u_v = ((a.x.abs() * (opos.yz()) + a.y.abs() * (opos.zx()) + a.z.abs() * (opos.xy())));
-
+        let u_v = (a.x.abs() * (opos.yz()) + a.y.abs() * (opos.zx()) + a.z.abs() * (opos.xy()));
 
         Some(RayHit {
             distance: t_n,
@@ -306,11 +307,15 @@ impl Ray {
         &self,
         box_size: Vec3,
         position: Vec3,
+        rotation_axis: Vec3,
         material_index: usize,
-        transform: fn(Vec3, f32) -> Mat4,
         time: f32,
     ) -> Option<RayHit> {
-        let rotation = transform(position, time);
+        let rotation = Mat4::from_translation(position)
+            * Mat4::from_rotation_x(rotation_axis.x * DEGREES)
+            * Mat4::from_rotation_y(rotation_axis.y * DEGREES)
+            * Mat4::from_rotation_z(rotation_axis.z * DEGREES);
+            
         let inv_t = rotation.inverse();
 
         let mut ray_dir = self.direction;
@@ -351,9 +356,6 @@ impl Ray {
         let u_v =
             onor.x.abs() * (opos.yz()) + onor.y.abs() * (opos.zx()) + onor.z.abs() * (opos.xy());
 
-        if (u_v.x > 1. || u_v.x < 0. || u_v.y > 1. || u_v.y < 0.) {
-            //println!("Larger {}", u_v);
-        }
         Some(RayHit {
             distance: t_near,
             point: hit_point,

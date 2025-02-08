@@ -206,9 +206,10 @@ impl App {
             frame_time = Instant::now();
 
             delta += elapsed_nanos / nanos;
-
+            
             while delta >= 1. {
                 // App state updates here.
+                updated = renderer.scene.update(ts);
                 ups += 1;
                 delta -= 1.;
             }

@@ -14,7 +14,7 @@ struct Chunk {
 }
 
 pub struct Renderer {
-    pub scene: Arc<Scene>,
+    pub scene: Scene,
     pub accumulated: Vec<Vec4>,
     pub frame_index: u32,
 }
@@ -22,7 +22,7 @@ pub struct Renderer {
 impl Renderer {
     pub fn new(scene: Scene) -> Renderer {
         Renderer {
-            scene: Arc::new(scene),
+            scene: scene,
             accumulated: vec![],
             frame_index: 1,
         }
@@ -115,12 +115,11 @@ impl Renderer {
 
                 let offset = e.0 * acc_size;
 
-                let mut acc = vec![Vec4::ZERO; acc_size];
-                acc.copy_from_slice(&self.accumulated[offset..(offset + acc_size)]);
+                let k = &self.accumulated[offset..(offset + acc_size)];
 
                 let mut s = Renderer {
                     scene: self.scene.clone(),
-                    accumulated: acc,
+                    accumulated: k.to_vec(),
                     frame_index: self.frame_index,
                 };
 

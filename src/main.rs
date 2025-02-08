@@ -24,7 +24,7 @@ fn rotate(position: Vec3, time: f32) -> Mat4 {
     //println!("{}", time);
 
     return translate(position)
-        * (geometry::rotate_x_mat(0. * std::f32::consts::PI / 180.)
+        * (geometry::rotate_x_mat(-80. * std::f32::consts::PI / 180.)
             * geometry::rotate_y_mat(-20. * std::f32::consts::PI / 180.));
 }
 pub fn main() -> Result<(), AppError> {
@@ -48,10 +48,10 @@ pub fn main() -> Result<(), AppError> {
     ));
 
     objs.push(Object3D::new_box(
-        vec3(0.0, -0.2, -1.5),
-        vec3(0.5, 0.3, 1.3),
+        vec3(-1.0, 1., 2.),
+        vec3(0., 0., 0.),
+        vec3(0.5, 0.5, 0.5),
         3,
-        rotate,
     ));
 
     let mut scene1 = Scene::new(
@@ -84,9 +84,9 @@ pub fn main() -> Result<(), AppError> {
                 ambience: 0.4,
                 diffuse: 1.8,
                 shininess: 20.,
-                specular: 1.9,
+                specular: 0.9,
                 albedo: Vec3::new(0.0, 0.2, 0.9),
-                kind: MaterialType::Reflective { roughness: 1. },
+                kind: MaterialType::Reflective { roughness: 0.9 },
                 ..Default::default()
             },
             Material {
@@ -95,16 +95,16 @@ pub fn main() -> Result<(), AppError> {
                 specular: 1.1,
                 diffuse: 0.8,
                 albedo: Vec3::new(0.5, 0.5, 0.5),
-                kind: MaterialType::Reflective { roughness: 0.7 },
+                kind: MaterialType::Reflective { roughness: 0.8 },
                 texture: Some(1),
                 ..Default::default()
             },
             Material {
-                ambience: 0.4,
-                diffuse: 1.8,
-                shininess: 20.,
-                specular: 1.9,
-                albedo: Vec3::new(0.5, 0.2, 0.9),
+                ambience: 0.2,
+                diffuse: 1.2,
+                shininess: 9.,
+                specular: 0.2,
+                albedo: Vec3::new(0.1, 0.6, 0.1),
                 kind: MaterialType::Reflective { roughness: 0.3 },
                 ..Default::default()
             },
@@ -113,14 +113,14 @@ pub fn main() -> Result<(), AppError> {
 
     scene1 = scene1
         .with_texture(ImageUtils::load_image("./resources/chess.png")?)
-        .with_texture(ImageUtils::load_image("./resources/stone3.jpg")?)
+        .with_texture(ImageUtils::load_image("./resources/wood.png")?)
         .with_light(scene::Light {
             direction: vec3(-1., -1., -1.).normalize(),
             power: 1.5,
         });
     //scene1.ambient_color = vec3(0.4, 0.7, 1.);
     scene1.difuse = false;
-    scene1.shadow_casting = true;
+    scene1.shadow_casting = false;
     scene1.max_frames_rendering = 1000;
 
     let scene2 = Scene {

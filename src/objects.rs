@@ -19,9 +19,9 @@ pub enum Object3D {
 
     Box {
         position: Vec3,
+        rotation_axis: Vec3,
         dimension: Vec3,
         material_index: usize,
-        transform: fn(Vec3, f32) -> Mat4,
     },
 }
 
@@ -193,15 +193,15 @@ impl Object3D {
 
     pub fn new_box(
         position: Vec3,
+        rotation_axis: Vec3,
         dimension: Vec3,
         material_index: usize,
-        transform: fn(Vec3, f32) -> Mat4,
     ) -> Object3D {
         Object3D::Box {
             position,
+            rotation_axis,
             dimension,
             material_index,
-            transform,
         }
     }
 }

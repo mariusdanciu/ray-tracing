@@ -45,6 +45,23 @@ impl Default for Scene {
 }
 
 impl Scene {
+    pub fn update(&mut self, time: f32) -> bool {
+        let speed = 0.3;
+        if let Some(Object3D::Box {
+            position,
+            rotation_axis,
+            dimension,
+            ..
+        }) = self.objects.iter_mut().find(|obj| match **obj {
+            Object3D::Box { .. } => true,
+            _ => false,
+        }) {
+            rotation_axis.x += 2. * speed;
+            rotation_axis.z += 4. * speed;
+            rotation_axis.y += 2. * speed;
+        };
+        true
+    }
     pub fn new(objects: Vec<Object3D>, materials: Vec<Material>) -> Scene {
         Scene {
             light: Light {
