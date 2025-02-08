@@ -50,7 +50,7 @@ pub fn main() -> Result<(), AppError> {
     objs.push(Object3D::new_box(
         vec3(-1.0, 1., 2.),
         vec3(0., 0., 0.),
-        vec3(0.5, 0.5, 0.5),
+        vec3(0.5, 1.5, 0.5),
         3,
     ));
 
@@ -102,7 +102,7 @@ pub fn main() -> Result<(), AppError> {
             Material {
                 ambience: 0.2,
                 diffuse: 1.2,
-                shininess: 9.,
+                shininess: 90.,
                 specular: 0.2,
                 albedo: Vec3::new(0.1, 0.6, 0.1),
                 kind: MaterialType::Reflective { roughness: 0.3 },
