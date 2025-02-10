@@ -31,21 +31,22 @@ pub fn main() -> Result<(), AppError> {
     let mut objs = vec![
         Object3D::new_sphere(Vec3::new(-1.2, 0., 0.2), 0.5, 0),
         Object3D::new_sphere(Vec3::new(0., 0., 0.), 0.5, 2),
-        Object3D::new_sphere(Vec3::new(0., 0.5, -1.), 0.5, 4),
+        Object3D::new_sphere(Vec3::new(1.5, 0., 0.), 0.5, 4),
+        Object3D::new_plane(vec3(0., 1., 0.), vec3(0., -0.5, 0.), 1),
     ];
 
-    objs.push(Object3D::new_triangle(
-        Vec3::new(-5.0, -0.5, 5.),
-        Vec3::new(5.0, -0.5, 5.),
-        Vec3::new(-5., -0.5, -5.),
-        1,
-    ));
-    objs.push(Object3D::new_triangle(
-        Vec3::new(5.0, -0.5, -5.),
-        Vec3::new(-5.0, -0.5, -5.),
-        Vec3::new(5.0, -0.5, 5.),
-        1,
-    ));
+    // objs.push(Object3D::new_triangle(
+    //     Vec3::new(-5.0, -0.5, 5.),
+    //     Vec3::new(5.0, -0.5, 5.),
+    //     Vec3::new(-5., -0.5, -5.),
+    //     1,
+    // ));
+    // objs.push(Object3D::new_triangle(
+    //     Vec3::new(5.0, -0.5, -5.),
+    //     Vec3::new(-5.0, -0.5, -5.),
+    //     Vec3::new(5.0, -0.5, 5.),
+    //     1,
+    // ));
 
     objs.push(Object3D::new_box(
         vec3(-1.0, 1., 2.),
@@ -71,7 +72,7 @@ pub fn main() -> Result<(), AppError> {
                 ..Default::default()
             },
             Material {
-                ambience: 0.5,
+                ambience: 0.4,
                 diffuse: 0.1,
                 shininess: 15.,
                 specular: 0.8,
@@ -82,16 +83,16 @@ pub fn main() -> Result<(), AppError> {
             },
             Material {
                 ambience: 0.4,
-                diffuse: 1.8,
-                shininess: 20.,
+                diffuse: 2.2,
+                shininess: 70.,
                 specular: 0.9,
                 albedo: Vec3::new(0.0, 0.2, 0.9),
-                kind: MaterialType::Reflective { roughness: 0.9 },
+                kind: MaterialType::Reflective { roughness: 1. },
                 ..Default::default()
             },
             Material {
                 ambience: 0.4,
-                shininess: 30.,
+                shininess: 70.,
                 specular: 1.1,
                 diffuse: 0.8,
                 albedo: Vec3::new(0.5, 0.5, 0.5),
@@ -100,12 +101,12 @@ pub fn main() -> Result<(), AppError> {
                 ..Default::default()
             },
             Material {
-                ambience: 0.2,
-                diffuse: 1.2,
-                shininess: 90.,
-                specular: 0.2,
-                albedo: Vec3::new(0.1, 0.6, 0.1),
-                kind: MaterialType::Reflective { roughness: 0.3 },
+                ambience: 0.4,
+                diffuse: 0.8,
+                shininess: 80.,
+                specular: 0.4,
+                albedo: Vec3::new(0.0, 0.7, 0.1),
+                kind: MaterialType::Reflective { roughness: 0.4 },
                 ..Default::default()
             },
         ],
@@ -114,9 +115,9 @@ pub fn main() -> Result<(), AppError> {
     scene1 = scene1
         .with_texture(ImageUtils::load_image("./resources/chess.png")?)
         .with_texture(ImageUtils::load_image("./resources/wood.png")?)
-        .with_light(scene::Light {
-            direction: vec3(-1., -1., -1.).normalize(),
-            power: 1.5,
+        .with_light(scene::Light::Positional {
+            position: vec3(2., 2., 2.),
+            intensity: 5.,
         });
     //scene1.ambient_color = vec3(0.4, 0.7, 1.);
     scene1.difuse = false;
@@ -126,9 +127,9 @@ pub fn main() -> Result<(), AppError> {
     let scene2 = Scene {
         max_ray_bounces: 5,
         max_frames_rendering: 5000,
-        light: scene::Light {
+        light: scene::Light::Directional {
             direction: vec3(1., -1., -1.).normalize(),
-            power: 1.5,
+            intensity: 2.,
         },
         ambient_color: vec3(0., 0., 0.),
         difuse: true,

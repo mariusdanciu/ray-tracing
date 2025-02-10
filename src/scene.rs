@@ -1,18 +1,41 @@
-use std::time::Instant;
-
 use glam::{vec3, Vec3, Vec4};
 
 use glam::vec4;
 use rand::rngs::ThreadRng;
-use sdl2::libc::EOPNOTSUPP;
 
 use crate::objects::{Material, MaterialType, Object3D, Texture};
 use crate::ray::{Ray, RayHit, EPSILON};
 
-#[derive(Clone, Default)]
-pub struct Light {
-    pub direction: Vec3,
-    pub power: f32,
+#[derive(Clone)]
+pub enum Light {
+    Directional { direction: Vec3, intensity: f32 },
+    Positional { position: Vec3, intensity: f32 },
+    Spot { position: Vec3, intensity: f32 },
+}
+
+impl Light {
+    pub fn direction(&self, point: Vec3) -> Vec3 {
+        match *self {
+            Light::Directional { direction, ..} => direction,
+            Light::Positional { position, ..} => (point - position).normalize(),
+            Light::Spot { position, ..} => (point - position).normalize(),
+        }
+    }
+
+    pub fn distance(&self, point: Vec3) -> f32 {
+        match *self {
+            Light::Directional { direction, .. } => 1.,
+            Light::Positional { position, .. } => (point - position).length(),
+            Light::Spot { position, .. } => (point - position).length(),
+        }
+    }
+    pub fn intensity(&self) -> f32 {
+        match *self {
+            Light::Directional { direction, intensity } => intensity,
+            Light::Positional { position, intensity } => intensity,
+            Light::Spot { position, intensity } => intensity,
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -31,7 +54,10 @@ pub struct Scene {
 impl Default for Scene {
     fn default() -> Self {
         Self {
-            light: Default::default(),
+            light: Light::Directional {
+                direction: Default::default(),
+                intensity: 1.
+            },
             ambient_color: Default::default(),
             objects: Default::default(),
             materials: Default::default(),
@@ -64,9 +90,9 @@ impl Scene {
     }
     pub fn new(objects: Vec<Object3D>, materials: Vec<Material>) -> Scene {
         Scene {
-            light: Light {
+            light: Light::Directional {
                 direction: vec3(1., -1., -1.).normalize(),
-                power: 1.,
+                intensity: 1.
             },
             ambient_color: vec3(0.0, 0.0, 0.0),
             objects,
@@ -135,7 +161,7 @@ impl Scene {
         material: &Material,
     ) -> Vec3 {
         if !self.difuse {
-            ray.phong(&hit, &self.light, albedo, material)
+            ray.blinn_phong(&hit, &self.light, albedo, material)
         } else {
             light_color + material.emission_power * albedo
         }
@@ -180,7 +206,7 @@ impl Scene {
                         if let Some(obj) = self.trace_ray(
                             Ray {
                                 origin: hit.point + EPSILON * hit.normal,
-                                direction: -self.light.direction,
+                                direction: -self.light.direction(hit.point),
                             },
                             time,
                         ) {
@@ -188,7 +214,8 @@ impl Scene {
                             col *= 0.5;
                         }
                     }
-                    col
+                    let light_dis = self.light.distance(hit.point);
+                    col / (light_dis * light_dis) * self.light.intensity()
                 }
                 MaterialType::Refractive {
                     transparency,

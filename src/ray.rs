@@ -58,10 +58,10 @@ impl Ray {
         color: Vec3,
         material: &Material,
     ) -> Vec3 {
-        let coeff = hit.normal.dot(-light.direction);
+        let coeff = hit.normal.dot(-light.direction(hit.point));
         let ambience = material.ambience * color;
         let diffuse = material.diffuse * coeff.max(0.) * color;
-        let half_angle = (-self.direction - light.direction).normalize();
+        let half_angle = (-self.direction - light.direction(hit.point)).normalize();
         let shininess = (hit.normal.dot(half_angle))
             .max(0.)
             .powf(material.shininess);
@@ -70,12 +70,12 @@ impl Ray {
         ambience + diffuse + specular
     }
     pub fn phong(&self, hit: &RayHit, light: &Light, color: Vec3, material: &Material) -> Vec3 {
-        let coeff = hit.normal.dot(-light.direction);
+        let coeff = hit.normal.dot(-light.direction(hit.point));
         let ambience = material.ambience * color;
         let diffuse = material.diffuse * coeff.max(0.) * color;
         let shininess = (self
             .direction
-            .dot(self.reflect_vec(-light.direction, hit.normal)))
+            .dot(self.reflect_vec(-light.direction(hit.point), hit.normal)))
         .max(0.)
         .powf(material.shininess);
         let specular = material.specular * shininess * color;
@@ -225,6 +225,12 @@ impl Ray {
             } => {
                 self.box_intersection(*dimension, *position, *rotation_axis, *material_index, time)
             }
+
+            Object3D::Plane {
+                normal,
+                point,
+                material_index,
+            } => self.plane_intersection(*normal, *point, *material_index),
         }
     }
 
@@ -315,7 +321,7 @@ impl Ray {
             * Mat4::from_rotation_x(rotation_axis.x * DEGREES)
             * Mat4::from_rotation_y(rotation_axis.y * DEGREES)
             * Mat4::from_rotation_z(rotation_axis.z * DEGREES);
-            
+
         let inv_t = rotation.inverse();
 
         let mut ray_dir = self.direction;
@@ -410,6 +416,39 @@ impl Ray {
             normal,
             material_index,
             ..Default::default()
+        })
+    }
+
+    pub fn plane_intersection(
+        &self,
+        normal: Vec3,
+        p: Vec3,
+        material_index: usize,
+    ) -> Option<RayHit> {
+        let denom = self.direction.dot(normal);
+
+        if denom.abs() < 1e-6 {
+            return None;
+        }
+
+        let t = (p - self.origin).dot(normal) / denom;
+
+        if t < 0. {
+            return None;
+        }
+        let hit_point = self.origin + self.direction * t;
+
+        if hit_point.z.abs() > 10. || hit_point.x.abs() > 10. {
+            return None;
+        }
+
+        Some(RayHit {
+            distance: t,
+            point: hit_point,
+            normal,
+            material_index,
+            u: hit_point.x * 0.1,
+            v: hit_point.z * 0.1,
         })
     }
 }

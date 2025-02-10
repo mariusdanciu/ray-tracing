@@ -23,6 +23,12 @@ pub enum Object3D {
         dimension: Vec3,
         material_index: usize,
     },
+
+    Plane {
+        normal: Vec3,
+        point: Vec3,
+        material_index: usize,
+    },
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -175,6 +181,13 @@ impl Material {
 }
 
 impl Object3D {
+    pub fn new_plane(normal: Vec3, point: Vec3, material_index: usize) -> Object3D {
+        Object3D::Plane {
+            normal,
+            point,
+            material_index,
+        }
+    }
     pub fn new_sphere(origin: Vec3, radius: f32, material_index: usize) -> Object3D {
         Object3D::Sphere {
             position: origin,
