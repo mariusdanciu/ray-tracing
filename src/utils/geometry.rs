@@ -1,5 +1,6 @@
 use glam::Mat4;
 
+pub static DEGREES: f32 = std::f32::consts::PI / 180.;
 
 pub fn rotate_y_mat(o: f32) -> Mat4 {
     let (s, c) = f32::sin_cos(o);

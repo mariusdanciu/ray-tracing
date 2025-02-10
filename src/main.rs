@@ -29,24 +29,11 @@ fn rotate(position: Vec3, time: f32) -> Mat4 {
 }
 pub fn main() -> Result<(), AppError> {
     let mut objs = vec![
-        Object3D::new_sphere(Vec3::new(-1.2, 0., 0.2), 0.5, 0),
+        Object3D::new_sphere(Vec3::new(1.2, 0., 2.5), 0.5, 0),
         Object3D::new_sphere(Vec3::new(0., 0., 0.), 0.5, 2),
         Object3D::new_sphere(Vec3::new(1.5, 0., 0.), 0.5, 4),
         Object3D::new_plane(vec3(0., 1., 0.), vec3(0., -0.5, 0.), 1, Some(vec2(5., 5.))),
     ];
-
-    // objs.push(Object3D::new_triangle(
-    //     Vec3::new(-5.0, -0.5, 5.),
-    //     Vec3::new(5.0, -0.5, 5.),
-    //     Vec3::new(-5., -0.5, -5.),
-    //     1,
-    // ));
-    // objs.push(Object3D::new_triangle(
-    //     Vec3::new(5.0, -0.5, -5.),
-    //     Vec3::new(-5.0, -0.5, -5.),
-    //     Vec3::new(5.0, -0.5, 5.),
-    //     1,
-    // ));
 
     objs.push(Object3D::new_box(
         vec3(-1.0, 1., 2.),
@@ -83,9 +70,9 @@ pub fn main() -> Result<(), AppError> {
             },
             Material {
                 ambience: 0.4,
-                diffuse: 2.2,
-                shininess: 70.,
-                specular: 0.9,
+                diffuse: 2.0,
+                shininess: 90.,
+                specular: 1.2,
                 albedo: Vec3::new(0.0, 0.2, 0.9),
                 kind: MaterialType::Reflective { roughness: 1. },
                 ..Default::default()
@@ -163,8 +150,8 @@ pub fn main() -> Result<(), AppError> {
 
     let mut renderer = renderer::Renderer::new(scene1);
     let mut camera = Camera::new_with_pos(
-        Vec3::new(-2.8777819, 1.3294921, 2.0364523),
-        Vec3::new(0.6106094, -0.19236837, -0.76821935),
+        Vec3::new(3.8536084, 0.75215954, 4.388293),
+        Vec3::new(-0.76750606, -0.05052291, -0.6390541),
     );
     //let mut camera = Camera::new();
     App::run(&mut camera, &mut renderer)

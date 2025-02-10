@@ -32,10 +32,11 @@ impl Default for Camera {
         let inverse_view = Mat4::IDENTITY;
         let perspective = Mat4::IDENTITY;
         let inverse_perspective = Mat4::IDENTITY;
-
+        let width = 800;
+        let height = 600;
         Self {
-            width: 800,
-            height: 600,
+            width,
+            height,
             fov,
             near,
             far,
@@ -46,7 +47,7 @@ impl Default for Camera {
             inverse_view,
             perspective,
             inverse_perspective,
-            ray_directions: Vec::new(),
+            ray_directions: vec![Vec3::ZERO; (width * height) as usize],
         }
     }
 }
@@ -90,17 +91,15 @@ impl Camera {
                     self.perspective =
                         Mat4::perspective_rh(self.fov, w as f32 / h as f32, self.near, self.far);
                     self.inverse_perspective = self.perspective.inverse();
+                    self.ray_directions = vec![Vec3::ZERO; (self.width * self.height) as usize];
                 }
 
                 CameraEvent::RotateXY { delta } => {
                     let pitch_delta = delta.y * rotation_speed;
                     let yaw_delta = delta.x * rotation_speed;
 
-                    let rotation =
-                        geometry::rotate_x_mat(pitch_delta as f32 * std::f32::consts::PI / 180.)
-                            * geometry::rotate_y_mat(
-                                yaw_delta as f32 * std::f32::consts::PI / 180.,
-                            );
+                    let rotation = Mat4::from_rotation_x(-pitch_delta as f32 * geometry::DEGREES)
+                        * Mat4::from_rotation_y(-yaw_delta as f32 * geometry::DEGREES);
 
                     let fd = rotation
                         * Vec4::new(
@@ -127,7 +126,6 @@ impl Camera {
     }
 
     fn calculate_ray_directions(&mut self) {
-        self.ray_directions = vec![Vec3::ZERO; (self.width * self.height) as usize];
         let mut y = 0;
         let mut x = 0;
 
@@ -144,14 +142,8 @@ impl Camera {
                 let world_coords = self.inverse_view * Vec4::new(v3.x, v3.y, v3.z, 0.0);
 
                 let world_coords = Vec3::new(world_coords.x, world_coords.y, world_coords.z);
-                let ray_direction = (world_coords - self.position).normalize();
+                let ray_dir = (world_coords - self.position).normalize();
 
-                let ray_dir =
-                    Vec3::new(ray_direction.x, ray_direction.y, ray_direction.z).normalize();
-
-                // if x == self.width / 2 && y == self.height / 2 {
-                //     println!("Ray {} {}", ray_dir, self.forward_direction);
-                // }
                 self.ray_directions[x + y * self.width as usize] = ray_dir;
 
                 x += 1;

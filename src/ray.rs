@@ -1,8 +1,6 @@
-use std::time::Instant;
 
 use glam::{vec3, vec4, Mat4, Vec2, Vec3, Vec3Swizzles, Vec4, Vec4Swizzles};
 use rand::{rngs::ThreadRng, Rng};
-use rayon::iter::Inspect;
 
 use crate::{
     objects::{Material, Object3D},
@@ -11,7 +9,6 @@ use crate::{
 };
 
 pub static EPSILON: f32 = 0.0001_f32;
-static DEGREES: f32 = std::f32::consts::PI / 180.;
 
 #[derive(Debug, Copy, Clone)]
 pub struct Ray {
@@ -319,9 +316,9 @@ impl Ray {
         time: f32,
     ) -> Option<RayHit> {
         let rotation = Mat4::from_translation(position)
-            * Mat4::from_rotation_x(rotation_axis.x * DEGREES)
-            * Mat4::from_rotation_y(rotation_axis.y * DEGREES)
-            * Mat4::from_rotation_z(rotation_axis.z * DEGREES);
+            * Mat4::from_rotation_x(rotation_axis.x * geometry::DEGREES)
+            * Mat4::from_rotation_y(rotation_axis.y * geometry::DEGREES)
+            * Mat4::from_rotation_z(rotation_axis.z * geometry::DEGREES);
 
         let inv_t = rotation.inverse();
 
