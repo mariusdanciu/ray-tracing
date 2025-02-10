@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use glam::{vec3, vec4, Mat4, Vec3, Vec3Swizzles, Vec4, Vec4Swizzles};
+use glam::{vec3, vec4, Mat4, Vec2, Vec3, Vec3Swizzles, Vec4, Vec4Swizzles};
 use rand::{rngs::ThreadRng, Rng};
 use rayon::iter::Inspect;
 
@@ -229,8 +229,9 @@ impl Ray {
             Object3D::Plane {
                 normal,
                 point,
+                max_dist,
                 material_index,
-            } => self.plane_intersection(*normal, *point, *material_index),
+            } => self.plane_intersection(*normal, *point, *max_dist, *material_index),
         }
     }
 
@@ -423,6 +424,7 @@ impl Ray {
         &self,
         normal: Vec3,
         p: Vec3,
+        max_dist: Option<Vec2>,
         material_index: usize,
     ) -> Option<RayHit> {
         let denom = self.direction.dot(normal);
@@ -438,8 +440,10 @@ impl Ray {
         }
         let hit_point = self.origin + self.direction * t;
 
-        if hit_point.z.abs() > 10. || hit_point.x.abs() > 10. {
-            return None;
+        if let Some(Vec2 { x, y }) = max_dist {
+            if hit_point.z.abs() > y || hit_point.x.abs() > x {
+                return None;
+            }
         }
 
         Some(RayHit {

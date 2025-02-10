@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use glam::{vec3, Mat4, Vec3, Vec4};
+use glam::{vec3, Mat4, Vec2, Vec3, Vec4};
 
 #[derive(Debug, Copy, Clone)]
 pub enum Object3D {
@@ -27,7 +27,8 @@ pub enum Object3D {
     Plane {
         normal: Vec3,
         point: Vec3,
-        material_index: usize,
+        max_dist: Option<Vec2>,
+        material_index: usize
     },
 }
 
@@ -181,10 +182,11 @@ impl Material {
 }
 
 impl Object3D {
-    pub fn new_plane(normal: Vec3, point: Vec3, material_index: usize) -> Object3D {
+    pub fn new_plane(normal: Vec3, point: Vec3, material_index: usize, max_dist: Option<Vec2>) -> Object3D {
         Object3D::Plane {
             normal,
             point,
+            max_dist,
             material_index,
         }
     }

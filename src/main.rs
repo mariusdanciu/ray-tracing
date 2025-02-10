@@ -2,7 +2,7 @@ use std::time::Instant;
 
 use app::App;
 use camera::Camera;
-use glam::{vec3, Mat4, Vec3};
+use glam::{vec2, vec3, Mat4, Vec2, Vec3};
 use objects::{Material, MaterialType, Object3D};
 use scene::Scene;
 use utils::{errors::AppError, geometry, image::ImageUtils};
@@ -32,7 +32,7 @@ pub fn main() -> Result<(), AppError> {
         Object3D::new_sphere(Vec3::new(-1.2, 0., 0.2), 0.5, 0),
         Object3D::new_sphere(Vec3::new(0., 0., 0.), 0.5, 2),
         Object3D::new_sphere(Vec3::new(1.5, 0., 0.), 0.5, 4),
-        Object3D::new_plane(vec3(0., 1., 0.), vec3(0., -0.5, 0.), 1),
+        Object3D::new_plane(vec3(0., 1., 0.), vec3(0., -0.5, 0.), 1, Some(vec2(5., 5.))),
     ];
 
     // objs.push(Object3D::new_triangle(
