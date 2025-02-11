@@ -206,10 +206,12 @@ impl App {
             frame_time = Instant::now();
 
             delta += elapsed_nanos / nanos;
-            
+
             while delta >= 1. {
                 // App state updates here.
-                updated = renderer.scene.update(ts);
+                if let Some(f) = renderer.scene.update_func {
+                    updated = f(&mut renderer.scene, ts);
+                }
                 ups += 1;
                 delta -= 1.;
             }

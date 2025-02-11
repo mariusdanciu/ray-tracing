@@ -146,7 +146,6 @@ impl Renderer {
             .map_err(|e| e.to_string())?;
 
         self.frame_index += 1;
-
         Ok(())
     }
 }

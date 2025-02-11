@@ -59,6 +59,7 @@ pub struct Scene {
     pub max_ray_bounces: u8,
     pub max_frames_rendering: u32,
     pub shadow_casting: bool,
+    pub update_func: Option<fn(&mut Scene, f32) -> bool>,
 }
 
 impl Default for Scene {
@@ -77,28 +78,12 @@ impl Default for Scene {
             max_frames_rendering: 1000,
             shadow_casting: false,
             enable_accumulation: false,
+            update_func: None,
         }
     }
 }
 
 impl Scene {
-    pub fn update(&mut self, time: f32) -> bool {
-        let speed = 0.3;
-        if let Some(Object3D::Box {
-            position,
-            rotation_axis,
-            dimension,
-            ..
-        }) = self.objects.iter_mut().find(|obj| match **obj {
-            Object3D::Box { .. } => true,
-            _ => false,
-        }) {
-            rotation_axis.x += 2. * speed;
-            rotation_axis.z += 4. * speed;
-            rotation_axis.y += 2. * speed;
-        };
-        true
-    }
     pub fn new(objects: Vec<Object3D>, materials: Vec<Material>) -> Scene {
         Scene {
             light: Light::Directional {
@@ -213,26 +198,27 @@ impl Scene {
                     let reflected_col =
                         self.color(r, rnd, depth + 1, p_light, contribution * albedo, time);
 
-                    let mut col = if self.difuse {
+                    return if self.difuse {
                         reflected_col
                     } else {
-                        p_light * (roughness) + p_light * reflected_col * (1. - roughness)
-                    };
+                        let mut col =
+                            p_light * (roughness) + p_light * reflected_col * (1. - roughness);
 
-                    if self.shadow_casting {
-                        if let Some(obj) = self.trace_ray(
-                            Ray {
-                                origin: hit.point + EPSILON * hit.normal,
-                                direction: -self.light.direction(hit.point),
-                            },
-                            time,
-                        ) {
-                            // in the shadow
-                            col *= 0.5;
+                        if self.shadow_casting {
+                            if let Some(obj) = self.trace_ray(
+                                Ray {
+                                    origin: hit.point + EPSILON * hit.normal,
+                                    direction: -self.light.direction(hit.point),
+                                },
+                                time,
+                            ) {
+                                // in the shadow
+                                col *= 0.5;
+                            }
                         }
-                    }
-                    let light_dis = self.light.distance(hit.point);
-                    col / (light_dis * light_dis) * self.light.intensity()
+                        let light_dis = self.light.distance(hit.point);
+                        col / (light_dis * light_dis) * self.light.intensity()
+                    };
                 }
                 MaterialType::Refractive {
                     transparency,

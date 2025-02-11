@@ -15,18 +15,24 @@ mod renderer;
 mod scene;
 mod utils;
 
-fn translate(p: Vec3) -> Mat4 {
-    Mat4::from_translation(p)
+pub fn update(s: &mut Scene, time: f32) -> bool {
+    let speed = 0.3;
+    if let Some(Object3D::Box {
+        position,
+        rotation_axis,
+        dimension,
+        ..
+    }) = s.objects.iter_mut().find(|obj| match **obj {
+        Object3D::Box { .. } => true,
+        _ => false,
+    }) {
+        rotation_axis.x += 2. * speed;
+        rotation_axis.z += 4. * speed;
+        rotation_axis.y += 2. * speed;
+    };
+    true
 }
-fn rotate(position: Vec3, time: f32) -> Mat4 {
-    //let speed = 0.1;
-    //let time = start_time.elapsed().as_millis() as f32;
-    //println!("{}", time);
 
-    return translate(position)
-        * (geometry::rotate_x_mat(-80. * std::f32::consts::PI / 180.)
-            * geometry::rotate_y_mat(-20. * std::f32::consts::PI / 180.));
-}
 pub fn main() -> Result<(), AppError> {
     let mut objs = vec![
         Object3D::new_sphere(Vec3::new(1.2, 0., 2.5), 0.5, 0),
@@ -107,20 +113,22 @@ pub fn main() -> Result<(), AppError> {
             intensity: 5.,
         });
     //scene1.ambient_color = vec3(0.4, 0.7, 1.);
+    scene1.update_func = Some(update);
     scene1.difuse = false;
     scene1.enable_accumulation = false;
     scene1.shadow_casting = false;
-    scene1.max_frames_rendering = 1000;
+    scene1.max_frames_rendering = 5000;
 
     let scene2 = Scene {
         max_ray_bounces: 5,
-        max_frames_rendering: 5000,
+        max_frames_rendering: 10000,
         light: scene::Light::Directional {
             direction: vec3(1., -1., -1.).normalize(),
             intensity: 2.,
         },
         ambient_color: vec3(0., 0., 0.),
         difuse: true,
+        enable_accumulation: true,
         objects: vec![
             Object3D::new_sphere(Vec3::new(0., -100.5, 0.), 100., 0),
             Object3D::new_sphere(Vec3::new(10., 15., -34.), 20.0, 1),
