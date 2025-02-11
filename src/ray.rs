@@ -1,4 +1,4 @@
-use glam::{vec3, vec4, Mat4, Vec2, Vec3, Vec3Swizzles, Vec4, Vec4Swizzles};
+use glam::{vec2, vec3, vec4, Mat4, Vec2, Vec3, Vec3Swizzles, Vec4, Vec4Swizzles};
 use rand::{rngs::ThreadRng, Rng};
 
 use crate::{
@@ -231,81 +231,106 @@ impl Ray {
                 max_dist,
                 material_index,
             } => self.plane_intersection(*normal, *point, *max_dist, *material_index),
+
+            Object3D::Cylinder {
+                radius,
+                height,
+                position,
+                rotation_axis,
+                material_index,
+            } => self.cylinder_intersection(
+                *radius,
+                *height,
+                *position,
+                *rotation_axis,
+                *material_index,
+            ),
         }
     }
 
-    fn step(&self, a: Vec3, b: Vec3) -> Vec3 {
-        let x = if b.x < a.x { 0.0 } else { 1.0 };
-        let y = if b.y < a.y { 0.0 } else { 1.0 };
-        let z = if b.z < a.z { 0.0 } else { 1.0 };
-
-        return vec3(x, y, z);
-    }
-
-    fn box_intersection1(
+    fn cylinder_intersection(
         &self,
-        rad: Vec3,
+        radius: f32,
+        height: f32,
         position: Vec3,
+        rotation_axis: Vec3,
         material_index: usize,
-        transform: fn(Vec3, f32) -> Mat4,
-        time: f32,
     ) -> Option<RayHit> {
-        let txi = transform(position, time);
-        let txx = txi.inverse();
+        let rotation = Mat4::from_translation(position)
+            * Mat4::from_rotation_x(rotation_axis.x * geometry::DEGREES)
+            * Mat4::from_rotation_y(rotation_axis.y * geometry::DEGREES)
+            * Mat4::from_rotation_z(rotation_axis.z * geometry::DEGREES);
 
-        let rd = self.direction;
-        let ro = self.origin;
-        // convert from ray to box space
-        let rdd = (txx * vec4(rd.x, rd.y, rd.z, 0.0)).xyz();
-        let roo = (txx * vec4(ro.x, ro.y, ro.z, 1.0)).xyz();
+        let inv_t = rotation.inverse();
 
-        // ray-box intersection in box space
-        let m = 1.0 / rdd;
+        let mut ray_dir = self.direction;
+        let mut ray_origin = self.origin;
 
-        // more robust
-        let k = vec3(
-            if rdd.x >= 0.0 { rad.x } else { -rad.x },
-            if rdd.y >= 0.0 { rad.y } else { -rad.y },
-            if rdd.z >= 0.0 { rad.z } else { -rad.z },
-        );
-        let t1 = (-roo - k) * m;
-        let t2 = (-roo + k) * m;
+        ray_dir = (inv_t * vec4(ray_dir.x, ray_dir.y, ray_dir.z, 0.)).xyz();
+        ray_origin = (inv_t * vec4(ray_origin.x, ray_origin.y, ray_origin.z, 1.)).xyz();
 
-        let t_n = t1.x.max(t1.y).max(t1.z);
-        let t_f = t2.x.min(t2.y).min(t2.z);
+        let ro2d = vec2(ray_origin.x, ray_origin.y);
+        let rd2d = vec2(ray_dir.x, ray_dir.y);
 
-        // no intersection
-        if t_n > t_f || t_f < 0.0 {
+        let a = rd2d.dot(rd2d);
+        let b = 2. * ro2d.dot(rd2d);
+        let c = ro2d.dot(ro2d) - radius * radius;
+
+        let disc = b * b - 4. * a * c;
+
+        if disc < 0.0 {
             return None;
         }
 
-        // use this instead if your rays origin can be inside the box
-        let (t, mut normal) = if t_n > 0.0 {
-            let p = self.step(vec3(t_n, t_n, t_n), t1);
-            (t_n, p)
+        let t0 = (-b + disc.sqrt()) / (2.0 * a);
+        let t1 = (-b - disc.sqrt()) / (2.0 * a);
+
+        let hit_point = self.origin + self.direction * t1;
+
+        let mut distances = [f32::MAX, f32::MAX, f32::MAX];
+
+        distances[0] = t1;
+
+        if hit_point.z.abs() > 1.0 {
+            let t0 = (ray_origin.z - 1.0) / -ray_dir.z;
+            let t1 = (ray_origin.z + 1.0) / -ray_dir.z;
+
+            let hit_point_0 = self.origin + self.direction * t0;
+            let hit_point_1 = self.origin + self.direction * t1;
+
+            if t0 > 0.
+                && (hit_point_0.x * hit_point_0.x + hit_point_0.y * hit_point_0.y).sqrt() < 1.0
+            {
+               distances[1] = t0;
+            } else if t1 > 0.
+                && (hit_point_1.x * hit_point_1.x + hit_point_1.y * hit_point_1.y).sqrt() < 1.0
+            {
+                distances[2] = t1;
+            } else {
+                return None;
+            }
         } else {
-            let p = self.step(t2, vec3(t_f, t_f, t_f));
-            (t_f, p)
-        };
+            return None;
+        }
 
-        // add sign to normal and convert to ray space
-        let a = (-rdd.signum()) * normal;
+        let mut closest = distances[0];
+        if distances[1] < closest {
+            closest = distances[1]
+        }
 
-        normal = (txi * vec4(a.x, a.y, a.z, 0.0)).xyz();
+        if distances[2] < closest {
+            closest = distances[2]
+        }
 
-        let hit_point = self.origin + self.direction * t;
+        let hit_point = self.origin + self.direction * closest;
 
-        let opos = (txx * vec4(hit_point.x, hit_point.y, hit_point.z, 1.0)).xyz();
-
-        let u_v = (a.x.abs() * (opos.yz()) + a.y.abs() * (opos.zx()) + a.z.abs() * (opos.xy()));
-
+        let normal = Vec3::ZERO;
         Some(RayHit {
-            distance: t_n,
+            distance: t1,
             point: hit_point,
             normal,
             material_index,
-            u: u_v.x,
-            v: u_v.y,
+            ..Default::default()
         })
     }
 
@@ -350,7 +375,7 @@ impl Ray {
             return None; // no intersection
         }
 
-        let a = -ray_dir.signum() * self.step(vec3(t_near, t_near, t_near), t_enter);
+        let a = -ray_dir.signum() * geometry::step(vec3(t_near, t_near, t_near), t_enter);
 
         let normal = (rotation * vec4(a.x, a.y, a.z, 0.0)).xyz();
 

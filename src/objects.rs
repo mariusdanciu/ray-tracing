@@ -28,7 +28,15 @@ pub enum Object3D {
         normal: Vec3,
         point: Vec3,
         max_dist: Option<Vec2>,
-        material_index: usize
+        material_index: usize,
+    },
+
+    Cylinder {
+        radius: f32,
+        height: f32,
+        position: Vec3,
+        rotation_axis: Vec3,
+        material_index: usize,
     },
 }
 
@@ -148,41 +156,15 @@ impl Material {
         // adjust reflect multiplier for object reflectivity
         reflectivity + (1.0 - reflectivity) * ret
     }
-
-    pub fn _fresnel(&self, incident: Vec3, normal: Vec3, index: f32) -> f32 {
-        let mut i_dot_n = incident.dot(normal);
-        let mut eta_i = 1.0;
-        let mut eta_t = index;
-        if i_dot_n < 0.0 {
-            i_dot_n = -i_dot_n;
-        } else {
-            eta_i = eta_t;
-            eta_t = 1.0;
-        }
-        let eta = eta_i / eta_t;
-
-        let sin_t = eta * (1. - i_dot_n * i_dot_n).sqrt();
-        if sin_t > 1.0 {
-            //Total internal reflection
-            return 1.0;
-        } else {
-            let cos_t = (1.0 - sin_t * sin_t).max(0.0).sqrt();
-            let cos_i = cos_t.abs();
-
-            let et_ci = eta_t * cos_i;
-            let ei_ct = eta_i * cos_t;
-            let ei_ci = eta_i * cos_i;
-            let et_ct = eta_t * cos_t;
-
-            let r_s = (et_ci - ei_ct) / (et_ci + ei_ct);
-            let r_p = (ei_ci - et_ct) / (ei_ci + et_ct);
-            return (r_s * r_s + r_p * r_p) / 2.0;
-        }
-    }
 }
 
 impl Object3D {
-    pub fn new_plane(normal: Vec3, point: Vec3, material_index: usize, max_dist: Option<Vec2>) -> Object3D {
+    pub fn new_plane(
+        normal: Vec3,
+        point: Vec3,
+        material_index: usize,
+        max_dist: Option<Vec2>,
+    ) -> Object3D {
         Object3D::Plane {
             normal,
             point,

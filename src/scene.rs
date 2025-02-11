@@ -148,18 +148,86 @@ impl Scene {
         closest_hit
     }
 
-    fn make_light(
+    fn color_diffuse(
         &self,
-        ray: &Ray,
-        hit: &RayHit,
+        ray: Ray,
+        rnd: &mut ThreadRng,
+        depth: u8,
         light_color: Vec3,
-        albedo: Vec3,
-        material: &Material,
+        contribution: Vec3,
+        time: f32,
     ) -> Vec3 {
-        if !self.difuse {
-            ray.blinn_phong(&hit, &self.light, albedo, material)
+        if depth >= self.max_ray_bounces {
+            return light_color;
+        }
+        if let Some((hit, object)) = self.trace_ray(ray, time) {
+            let material = self.materials[hit.material_index];
+            let mut albedo = material.albedo;
+
+            match material.kind {
+                MaterialType::Reflective { roughness } => {
+                    if let Some(idx) = material.texture {
+                        albedo = self.textures[idx].from_uv(hit.u, hit.v);
+                    }
+
+                    let p_light = light_color + material.emission_power * albedo;
+
+                    let r = ray.reflection_ray(
+                        hit,
+                        roughness,
+                        rnd,
+                        self.difuse,
+                        self.enable_accumulation,
+                    );
+
+                    let reflected_col =
+                        self.color_diffuse(r, rnd, depth + 1, p_light, contribution * albedo, time);
+
+                    return reflected_col;
+                }
+                MaterialType::Refractive {
+                    transparency,
+                    refraction_index,
+                    reflectivity,
+                } => {
+                    let mut refraction_color = Vec3::ZERO;
+                    let kr =
+                        material.fresnel(ray.direction, hit.normal, refraction_index, reflectivity)
+                            as f32;
+
+                    if let Some(refraction_ray) = ray.refraction_ray(hit, refraction_index) {
+                        refraction_color = self.color(
+                            refraction_ray,
+                            rnd,
+                            depth + 1,
+                            light_color,
+                            contribution * albedo,
+                            time,
+                        );
+                    }
+
+                    let reflection_ray = Ray {
+                        origin: hit.point + EPSILON * hit.normal,
+                        direction: ray.reflect(hit.normal),
+                    };
+
+                    let p_light = light_color + material.emission_power * albedo;
+                    let reflection_color = self.color_diffuse(
+                        reflection_ray,
+                        rnd,
+                        depth + 1,
+                        p_light,
+                        contribution * albedo,
+                        time,
+                    );
+
+                    let color =
+                        reflection_color * kr + refraction_color * (1.0 - kr) * transparency;
+                    color
+                }
+            }
         } else {
-            light_color + material.emission_power * albedo
+            light_color + self.ambient_color * contribution
         }
     }
 
@@ -185,7 +253,7 @@ impl Scene {
                         albedo = self.textures[idx].from_uv(hit.u, hit.v);
                     }
 
-                    let p_light = self.make_light(&ray, &hit, light_color, albedo, &material);
+                    let p_light = ray.blinn_phong(&hit, &self.light, albedo, &material);
 
                     let r = ray.reflection_ray(
                         hit,
@@ -246,7 +314,7 @@ impl Scene {
                         direction: ray.reflect(hit.normal),
                     };
 
-                    let p_light = self.make_light(&ray, &hit, light_color, albedo, &material);
+                    let p_light = ray.blinn_phong(&hit, &self.light, albedo, &material);
                     let reflection_color = self.color(
                         reflection_ray,
                         rnd,
@@ -271,8 +339,11 @@ impl Scene {
 
         let contribution = Vec3::ONE;
 
-        light = self.color(ray, rnd, 0, light, contribution, time);
-
+        light = if self.difuse {
+            self.color_diffuse(ray, rnd, 0, light, contribution, time)
+        } else {
+            self.color(ray, rnd, 0, light, contribution, time)
+        };
         vec4(light.x, light.y, light.z, 1.)
     }
 }

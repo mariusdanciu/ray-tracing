@@ -96,7 +96,7 @@ impl Renderer {
         }
 
         if self.frame_index > self.scene.max_frames_rendering
-            || (self.frame_index > 1 && !self.scene.enable_accumulation)
+            || (self.frame_index > 1 && !self.scene.enable_accumulation && !self.scene.difuse)
         {
             return Ok(());
         }
