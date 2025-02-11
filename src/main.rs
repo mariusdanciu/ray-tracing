@@ -64,7 +64,7 @@ pub fn main() -> Result<(), AppError> {
                 shininess: 15.,
                 specular: 0.8,
                 albedo: Vec3::new(0.4, 0.4, 0.4),
-                kind: MaterialType::Reflective { roughness: 0.7 },
+                kind: MaterialType::Reflective { roughness: 0.8 },
                 texture: Some(0),
                 ..Default::default()
             },
@@ -108,6 +108,7 @@ pub fn main() -> Result<(), AppError> {
         });
     //scene1.ambient_color = vec3(0.4, 0.7, 1.);
     scene1.difuse = false;
+    scene1.enable_accumulation = false;
     scene1.shadow_casting = false;
     scene1.max_frames_rendering = 1000;
 

@@ -16,9 +16,9 @@ pub enum Light {
 impl Light {
     pub fn direction(&self, point: Vec3) -> Vec3 {
         match *self {
-            Light::Directional { direction, ..} => direction,
-            Light::Positional { position, ..} => (point - position).normalize(),
-            Light::Spot { position, ..} => (point - position).normalize(),
+            Light::Directional { direction, .. } => direction,
+            Light::Positional { position, .. } => (point - position).normalize(),
+            Light::Spot { position, .. } => (point - position).normalize(),
         }
     }
 
@@ -31,9 +31,18 @@ impl Light {
     }
     pub fn intensity(&self) -> f32 {
         match *self {
-            Light::Directional { direction, intensity } => intensity,
-            Light::Positional { position, intensity } => intensity,
-            Light::Spot { position, intensity } => intensity,
+            Light::Directional {
+                direction,
+                intensity,
+            } => intensity,
+            Light::Positional {
+                position,
+                intensity,
+            } => intensity,
+            Light::Spot {
+                position,
+                intensity,
+            } => intensity,
         }
     }
 }
@@ -46,6 +55,7 @@ pub struct Scene {
     pub materials: Vec<Material>,
     pub textures: Vec<Texture>,
     pub difuse: bool,
+    pub enable_accumulation: bool,
     pub max_ray_bounces: u8,
     pub max_frames_rendering: u32,
     pub shadow_casting: bool,
@@ -56,7 +66,7 @@ impl Default for Scene {
         Self {
             light: Light::Directional {
                 direction: Default::default(),
-                intensity: 1.
+                intensity: 1.,
             },
             ambient_color: Default::default(),
             objects: Default::default(),
@@ -66,6 +76,7 @@ impl Default for Scene {
             max_ray_bounces: Default::default(),
             max_frames_rendering: 1000,
             shadow_casting: false,
+            enable_accumulation: false,
         }
     }
 }
@@ -92,7 +103,7 @@ impl Scene {
         Scene {
             light: Light::Directional {
                 direction: vec3(1., -1., -1.).normalize(),
-                intensity: 1.
+                intensity: 1.,
             },
             ambient_color: vec3(0.0, 0.0, 0.0),
             objects,
@@ -191,7 +202,13 @@ impl Scene {
 
                     let p_light = self.make_light(&ray, &hit, light_color, albedo, &material);
 
-                    let r = ray.reflection_ray(hit, roughness, rnd, self.difuse);
+                    let r = ray.reflection_ray(
+                        hit,
+                        roughness,
+                        rnd,
+                        self.difuse,
+                        self.enable_accumulation,
+                    );
 
                     let reflected_col =
                         self.color(r, rnd, depth + 1, p_light, contribution * albedo, time);

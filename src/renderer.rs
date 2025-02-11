@@ -40,7 +40,8 @@ impl Renderer {
         for pos in 0..chunk.size {
             let ray_dir = camera.ray_directions[pos + chunk.pixel_offset];
 
-            let color = if self.scene.difuse {
+            let color = if self.scene.enable_accumulation {
+                //println!("accumulate {}", self.frame_index);
                 self.accumulated[pos] += self.scene.pixel(
                     Ray {
                         origin: camera.position,
@@ -95,7 +96,7 @@ impl Renderer {
         }
 
         if self.frame_index > self.scene.max_frames_rendering
-            || (self.frame_index > 1 && !self.scene.difuse)
+            || (self.frame_index > 1 && !self.scene.enable_accumulation)
         {
             return Ok(());
         }

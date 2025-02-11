@@ -1,4 +1,3 @@
-
 use glam::{vec3, vec4, Mat4, Vec2, Vec3, Vec3Swizzles, Vec4, Vec4Swizzles};
 use rand::{rngs::ThreadRng, Rng};
 
@@ -86,19 +85,22 @@ impl Ray {
         roughness: f32,
         rnd: &mut ThreadRng,
         diffuse: bool,
+        enable_accumulation: bool,
     ) -> Ray {
         let dir: Vec3;
         if !diffuse {
-            dir = self
-                .reflect(
-                    hit.normal, // + roughness
-                               //     * vec3(
-                               //         rnd.gen_range(-0.5..0.5),
-                               //         rnd.gen_range(-0.5..0.5),
-                               //         rnd.gen_range(-0.5..0.5),
-                               //     ),
-                )
-                .normalize();
+            let factor = if enable_accumulation {
+                roughness
+                    * vec3(
+                        rnd.gen_range(-0.5..0.5),
+                        rnd.gen_range(-0.5..0.5),
+                        rnd.gen_range(-0.5..0.5),
+                    )
+            } else {
+                Vec3::splat(0.0)
+            };
+
+            dir = self.reflect(hit.normal + factor).normalize();
         } else {
             let rnd = vec3(
                 rnd.gen_range(-1.0..1.0),
