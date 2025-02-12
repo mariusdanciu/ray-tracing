@@ -212,6 +212,7 @@ impl App {
                 if let Some(f) = renderer.scene.update_func {
                     updated = f(&mut renderer.scene, ts);
                 }
+
                 ups += 1;
                 delta -= 1.;
             }

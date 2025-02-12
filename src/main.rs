@@ -15,8 +15,8 @@ mod renderer;
 mod scene;
 mod utils;
 
-pub fn update(s: &mut Scene, time: f32) -> bool {
-    let speed = 0.3;
+pub fn update(s: &mut Scene, ts: f32) -> bool {
+    let speed = 40.;
     if let Some(Object3D::Box {
         position,
         rotation_axis,
@@ -28,9 +28,9 @@ pub fn update(s: &mut Scene, time: f32) -> bool {
         Object3D::Box { .. } => true,
         _ => false,
     }) {
-        rotation_axis.x += 2. * speed;
-        rotation_axis.z += 4. * speed;
-        rotation_axis.y += 2. * speed;
+        rotation_axis.x += 2. * speed * ts;
+        rotation_axis.z += 4. * speed * ts;
+        rotation_axis.y += 2. * speed * ts;
 
         let t = Mat4::from_translation(*position)
             * Mat4::from_rotation_x(rotation_axis.x * geometry::DEGREES)
