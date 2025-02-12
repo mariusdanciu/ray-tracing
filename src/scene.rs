@@ -54,7 +54,7 @@ pub struct Scene {
     pub objects: Vec<Object3D>,
     pub materials: Vec<Material>,
     pub textures: Vec<Texture>,
-    pub difuse: bool,
+    pub diffuse: bool,
     pub enable_accumulation: bool,
     pub max_ray_bounces: u8,
     pub max_frames_rendering: u32,
@@ -73,7 +73,7 @@ impl Default for Scene {
             objects: Default::default(),
             materials: Default::default(),
             textures: Default::default(),
-            difuse: Default::default(),
+            diffuse: Default::default(),
             max_ray_bounces: Default::default(),
             max_frames_rendering: 1000,
             shadow_casting: false,
@@ -94,7 +94,7 @@ impl Scene {
             objects,
             materials,
             textures: vec![],
-            difuse: false,
+            diffuse: false,
             max_ray_bounces: 5,
             ..Default::default()
         }
@@ -176,14 +176,14 @@ impl Scene {
                         hit,
                         roughness,
                         rnd,
-                        self.difuse,
+                        self.diffuse,
                         self.enable_accumulation,
                     );
 
                     let reflected_col =
                         self.color_diffuse(r, rnd, depth + 1, p_light, contribution * albedo, time);
 
-                    return reflected_col;
+                    reflected_col
                 }
                 MaterialType::Refractive {
                     transparency,
@@ -259,34 +259,30 @@ impl Scene {
                         hit,
                         roughness,
                         rnd,
-                        self.difuse,
+                        self.diffuse,
                         self.enable_accumulation,
                     );
 
                     let reflected_col =
                         self.color(r, rnd, depth + 1, p_light, contribution * albedo, time);
 
-                    return if self.difuse {
-                        reflected_col
-                    } else {
-                        let mut col =
-                            p_light * (roughness) + p_light * reflected_col * (1. - roughness);
+                    let mut col =
+                        p_light * (roughness) + p_light * reflected_col * (1. - roughness);
 
-                        if self.shadow_casting {
-                            if let Some(obj) = self.trace_ray(
-                                Ray {
-                                    origin: hit.point + EPSILON * hit.normal,
-                                    direction: -self.light.direction(hit.point),
-                                },
-                                time,
-                            ) {
-                                // in the shadow
-                                col *= 0.5;
-                            }
+                    if self.shadow_casting {
+                        if let Some(obj) = self.trace_ray(
+                            Ray {
+                                origin: hit.point + EPSILON * hit.normal,
+                                direction: -self.light.direction(hit.point),
+                            },
+                            time,
+                        ) {
+                            // in the shadow
+                            col *= 0.5;
                         }
-                        let light_dis = self.light.distance(hit.point);
-                        col / (light_dis * light_dis) * self.light.intensity()
-                    };
+                    }
+                    let light_dis = self.light.distance(hit.point);
+                    col / (light_dis * light_dis) * self.light.intensity()
                 }
                 MaterialType::Refractive {
                     transparency,
@@ -339,7 +335,7 @@ impl Scene {
 
         let contribution = Vec3::ONE;
 
-        light = if self.difuse {
+        light = if self.diffuse {
             self.color_diffuse(ray, rnd, 0, light, contribution, time)
         } else {
             self.color(ray, rnd, 0, light, contribution, time)

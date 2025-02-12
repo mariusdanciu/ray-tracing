@@ -20,8 +20,10 @@ pub fn update(s: &mut Scene, time: f32) -> bool {
     if let Some(Object3D::Box {
         position,
         rotation_axis,
+        transform,
+        inv_transform,
         dimension,
-        ..
+        material_index,
     }) = s.objects.iter_mut().find(|obj| match **obj {
         Object3D::Box { .. } => true,
         _ => false,
@@ -29,6 +31,21 @@ pub fn update(s: &mut Scene, time: f32) -> bool {
         rotation_axis.x += 2. * speed;
         rotation_axis.z += 4. * speed;
         rotation_axis.y += 2. * speed;
+
+        let t = Mat4::from_translation(*position)
+            * Mat4::from_rotation_x(rotation_axis.x * geometry::DEGREES)
+            * Mat4::from_rotation_y(rotation_axis.y * geometry::DEGREES)
+            * Mat4::from_rotation_z(rotation_axis.z * geometry::DEGREES);
+        transform.x_axis = t.x_axis;
+        transform.y_axis = t.y_axis;
+        transform.z_axis = t.z_axis;
+        transform.w_axis = t.w_axis;
+
+        let inv_t = transform.inverse();
+        inv_transform.x_axis = inv_t.x_axis;
+        inv_transform.y_axis = inv_t.y_axis;
+        inv_transform.z_axis = inv_t.z_axis;
+        inv_transform.w_axis = inv_t.w_axis;
     };
     true
 }
@@ -114,7 +131,7 @@ pub fn main() -> Result<(), AppError> {
         });
     //scene1.ambient_color = vec3(0.4, 0.7, 1.);
     scene1.update_func = Some(update);
-    scene1.difuse = false;
+    scene1.diffuse = false;
     scene1.enable_accumulation = false;
     scene1.shadow_casting = false;
     scene1.max_frames_rendering = 5000;
@@ -127,7 +144,7 @@ pub fn main() -> Result<(), AppError> {
             intensity: 2.,
         },
         ambient_color: vec3(0., 0., 0.),
-        difuse: true,
+        diffuse: true,
         enable_accumulation: true,
         objects: vec![
             Object3D::new_sphere(Vec3::new(0., -100.5, 0.), 100., 0),

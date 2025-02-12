@@ -205,9 +205,18 @@ impl Ray {
         match obj {
             Object3D::Sphere {
                 position,
+                rotation_axis,
                 radius,
                 material_index,
-            } => self.sphere_intersection(position, radius, *material_index),
+                transform,
+                inv_transform,
+            } => self.sphere_intersection(
+                *position,
+                *transform,
+                *inv_transform,
+                radius,
+                *material_index,
+            ),
 
             Object3D::Triangle {
                 v1,
@@ -219,10 +228,12 @@ impl Ray {
             Object3D::Box {
                 position,
                 rotation_axis,
+                transform,
+                inv_transform,
                 dimension,
                 material_index,
             } => {
-                self.box_intersection(*dimension, *position, *rotation_axis, *material_index, time)
+                self.box_intersection(*dimension, *transform, *inv_transform, *material_index, time)
             }
 
             Object3D::Plane {
@@ -301,7 +312,7 @@ impl Ray {
             if t0 > 0.
                 && (hit_point_0.x * hit_point_0.x + hit_point_0.y * hit_point_0.y).sqrt() < 1.0
             {
-               distances[1] = t0;
+                distances[1] = t0;
             } else if t1 > 0.
                 && (hit_point_1.x * hit_point_1.x + hit_point_1.y * hit_point_1.y).sqrt() < 1.0
             {
@@ -337,23 +348,17 @@ impl Ray {
     fn box_intersection(
         &self,
         box_size: Vec3,
-        position: Vec3,
-        rotation_axis: Vec3,
+        transform: Mat4,
+        inv_transform: Mat4,
         material_index: usize,
         time: f32,
     ) -> Option<RayHit> {
-        let rotation = Mat4::from_translation(position)
-            * Mat4::from_rotation_x(rotation_axis.x * geometry::DEGREES)
-            * Mat4::from_rotation_y(rotation_axis.y * geometry::DEGREES)
-            * Mat4::from_rotation_z(rotation_axis.z * geometry::DEGREES);
-
-        let inv_t = rotation.inverse();
 
         let mut ray_dir = self.direction;
         let mut ray_origin = self.origin;
 
-        ray_dir = (inv_t * vec4(ray_dir.x, ray_dir.y, ray_dir.z, 0.)).xyz();
-        ray_origin = (inv_t * vec4(ray_origin.x, ray_origin.y, ray_origin.z, 1.)).xyz();
+        ray_dir = (inv_transform * vec4(ray_dir.x, ray_dir.y, ray_dir.z, 0.)).xyz();
+        ray_origin = (inv_transform * vec4(ray_origin.x, ray_origin.y, ray_origin.z, 1.)).xyz();
 
         let h_box_size = box_size;
 
@@ -377,11 +382,11 @@ impl Ray {
 
         let a = -ray_dir.signum() * geometry::step(vec3(t_near, t_near, t_near), t_enter);
 
-        let normal = (rotation * vec4(a.x, a.y, a.z, 0.0)).xyz();
+        let normal = (transform * vec4(a.x, a.y, a.z, 0.0)).xyz();
 
         let hit_point = self.origin + self.direction * t_near;
 
-        let opos = (inv_t * vec4(hit_point.x, hit_point.y, hit_point.z, 1.0)).xyz();
+        let opos = (inv_transform * vec4(hit_point.x, hit_point.y, hit_point.z, 1.0)).xyz();
         let onor = a;
 
         let u_v =
@@ -399,10 +404,19 @@ impl Ray {
 
     fn sphere_intersection(
         &self,
-        position: &Vec3,
+        position: Vec3,
+        transform: Mat4,
+        inv_transform: Mat4,
         radius: &f32,
         material_index: usize,
     ) -> Option<RayHit> {
+        let mut ray_dir = self.direction;
+        let mut ray_origin = self.origin;
+
+        // Move the ray in object space.
+        ray_dir = (inv_transform * vec4(ray_dir.x, ray_dir.y, ray_dir.z, 0.)).xyz();
+        ray_origin = (inv_transform * vec4(ray_origin.x, ray_origin.y, ray_origin.z, 1.)).xyz();
+
         // (bx^2 + by^2 + bz^2)t^2 + (2(axbx + ayby + azbz))t + (ax^2 + ay^2 + az^2 - r^2) = 0
         // where
         // a = ray origin
@@ -410,11 +424,9 @@ impl Ray {
         // r = radius
         // t = hit distance
 
-        let origin = self.origin - *position;
-
-        let a = self.direction.dot(self.direction);
-        let b = 2. * origin.dot(self.direction);
-        let c = origin.dot(origin) - radius * radius;
+        let a = ray_dir.dot(ray_dir);
+        let b = 2. * ray_origin.dot(ray_dir);
+        let c = ray_origin.dot(ray_origin) - radius * radius;
 
         let disc = b * b - 4. * a * c;
 
@@ -425,18 +437,15 @@ impl Ray {
         let t0 = (-b + disc.sqrt()) / (2.0 * a);
         let t1 = (-b - disc.sqrt()) / (2.0 * a);
 
-        let t = t1;
+        let hit_point = self.origin + self.direction * t1;
 
-        let hit_point = self.origin + self.direction * t;
+        let n = (hit_point - position).normalize();
 
-        let normal = (hit_point - *position).normalize();
-        //   println!(
-        //      "origin {} dir{} t0 {} t1 {} h0 {} h1{} N {} position {}",
-        //      self.origin, self.direction, t0, t1, h0, h1, normal, *position
-        //  );
+        // Move the normal in world space
+        let normal = (transform * vec4(n.x, n.y, n.z, 0.0)).xyz();
 
         Some(RayHit {
-            distance: t,
+            distance: t1,
             point: hit_point,
             normal,
             material_index,
