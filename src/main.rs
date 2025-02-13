@@ -16,7 +16,7 @@ mod scene;
 mod utils;
 
 pub fn update(s: &mut Scene, ts: f32) -> bool {
-    let speed = 40.;
+    let speed = 0.4;
     if let Some(Object3D::Box {
         position,
         rotation_axis,
@@ -28,9 +28,9 @@ pub fn update(s: &mut Scene, ts: f32) -> bool {
         Object3D::Box { .. } => true,
         _ => false,
     }) {
-        rotation_axis.x += 2. * speed * ts;
-        rotation_axis.z += 4. * speed * ts;
-        rotation_axis.y += 2. * speed * ts;
+        rotation_axis.x += 2. * speed;
+        rotation_axis.z += 4. * speed;
+        rotation_axis.y += 2. * speed;
 
         let t = Mat4::from_translation(*position)
             * Mat4::from_rotation_x(rotation_axis.x * geometry::DEGREES)
@@ -57,7 +57,7 @@ pub fn main() -> Result<(), AppError> {
         Object3D::new_sphere(Vec3::new(1.5, 0., 0.), 0.5, 4),
         Object3D::new_plane(vec3(0., 1., 0.), vec3(0., -0.5, 0.), 1, Some(vec2(5., 5.))),
         Object3D::new_box(vec3(-1.0, 1.3, 2.), vec3(0., 0., 0.), vec3(0.5, 1.5, 0.5), 3),
-        Object3D::new_cylinder(vec3(3.3, 0.1, 2.1), 1., vec3(90., 0., 0.), 0.4, 5),
+        Object3D::new_cylinder(vec3(3.3, 0.1, 2.1), 1., vec3(120., 0., 0.), 0.4, 5),
     ];
 
     let mut scene1 = Scene::new(
@@ -88,9 +88,9 @@ pub fn main() -> Result<(), AppError> {
             },
             Material {
                 ambience: 0.4,
-                diffuse: 1.0,
-                shininess: 90.,
-                specular: 2.2,
+                diffuse: 3.3,
+                shininess: 190.,
+                specular: 5.2,
                 albedo: Vec3::new(0.0, 0.2, 0.9),
                 kind: MaterialType::Reflective { roughness: 1. },
                 ..Default::default()
@@ -121,6 +121,7 @@ pub fn main() -> Result<(), AppError> {
                 specular: 0.4,
                 albedo: Vec3::new(0.7, 0.3, 0.5),
                 kind: MaterialType::Reflective { roughness: 0.4 },
+                texture: Some(2),
                 ..Default::default()
             },
         ],
@@ -129,6 +130,7 @@ pub fn main() -> Result<(), AppError> {
     scene1 = scene1
         .with_texture(ImageUtils::load_image("./resources/chess.png")?)
         .with_texture(ImageUtils::load_image("./resources/wood.png")?)
+        .with_texture(ImageUtils::load_image("./resources/stone3.jpg")?)
         .with_light(scene::Light::Positional {
             position: vec3(2., 2., 2.),
             intensity: 5.,

@@ -1,7 +1,8 @@
-use glam::{vec3, vec4, Mat4, Vec4Swizzles, Vec3Swizzles};
+use core::f32;
+
+use glam::{vec3, vec4, Mat4, Vec3Swizzles, Vec4Swizzles};
 
 use crate::ray::{Ray, RayHit};
-
 
 pub fn cylinder_intersection(
     ray: &Ray,
@@ -11,8 +12,7 @@ pub fn cylinder_intersection(
     inv_transform: Mat4,
     material_index: usize,
 ) -> Option<RayHit> {
-    let rd3 =
-        (inv_transform * vec4(ray.direction.x, ray.direction.y, ray.direction.z, 0.)).xyz();
+    let rd3 = (inv_transform * vec4(ray.direction.x, ray.direction.y, ray.direction.z, 0.)).xyz();
     let ro3 = (inv_transform * vec4(ray.origin.x, ray.origin.y, ray.origin.z, 1.)).xyz();
 
     let rd = rd3.xy();
@@ -35,12 +35,19 @@ pub fn cylinder_intersection(
         if valid_t1 {
             let n = vec3(h_t1.x, h_t1.y, 0.0).normalize();
             let normal = (transform * vec4(n.x, n.y, n.z, 0.0)).xyz();
+            let poi = ray.origin + ray.direction * t1;
+
+            let u = (h_t1.y / h_t1.x).atan();
+
+            let v = h_t1.z*2.;
+
             return Some(RayHit {
                 distance: t1,
-                point: ray.origin + ray.direction * t1,
+                point: poi,
                 normal,
                 material_index,
-                ..Default::default()
+                u: u,
+                v: v,
             });
         }
     }
@@ -80,6 +87,7 @@ pub fn cylinder_intersection(
         point: ray.origin + ray.direction * t,
         normal,
         material_index,
-        ..Default::default()
+        u: h_t.x,
+        v: h_t.y,
     });
 }
