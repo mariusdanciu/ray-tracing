@@ -322,7 +322,8 @@ impl Scene {
 
                     let color =
                         reflection_color * kr + refraction_color * (1.0 - kr) * transparency;
-                    color
+
+                    color*albedo
                 }
             }
         } else {
