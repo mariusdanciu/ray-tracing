@@ -37,7 +37,7 @@ pub fn cylinder_intersection(
             let normal = (transform * vec4(n.x, n.y, n.z, 0.0)).xyz();
             let poi = ray.origin + ray.direction * t1;
 
-            let u = (h_t1.y / h_t1.x).atan();
+            let u = (h_t1.y / h_t1.x).atan(); // atan2 covers edge cases
 
             let v = h_t1.z*2.;
 
