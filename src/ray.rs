@@ -232,9 +232,13 @@ impl Ray {
                 inv_transform,
                 dimension,
                 material_index,
-            } => {
-                self.box_intersection(*dimension, *transform, *inv_transform, *material_index, time)
-            }
+            } => self.box_intersection(
+                *dimension,
+                *transform,
+                *inv_transform,
+                *material_index,
+                time,
+            ),
 
             Object3D::Plane {
                 normal,
@@ -246,14 +250,15 @@ impl Ray {
             Object3D::Cylinder {
                 radius,
                 height,
-                position,
                 rotation_axis,
+                transform,
+                inv_transform,
                 material_index,
             } => self.cylinder_intersection(
                 *radius,
                 *height,
-                *position,
-                *rotation_axis,
+                *transform,
+                *inv_transform,
                 *material_index,
             ),
         }
@@ -261,83 +266,161 @@ impl Ray {
 
     fn cylinder_intersection(
         &self,
-        radius: f32,
+        ra: f32,
         height: f32,
-        position: Vec3,
-        rotation_axis: Vec3,
+        transform: Mat4,
+        inv_transform: Mat4,
         material_index: usize,
     ) -> Option<RayHit> {
-        let rotation = Mat4::from_translation(position)
-            * Mat4::from_rotation_x(rotation_axis.x * geometry::DEGREES)
-            * Mat4::from_rotation_y(rotation_axis.y * geometry::DEGREES)
-            * Mat4::from_rotation_z(rotation_axis.z * geometry::DEGREES);
+        let rd3 =
+            (inv_transform * vec4(self.direction.x, self.direction.y, self.direction.z, 0.)).xyz();
+        let ro3 = (inv_transform * vec4(self.origin.x, self.origin.y, self.origin.z, 1.)).xyz();
 
-        let inv_t = rotation.inverse();
+        let rd = rd3.xy();
+        let ro = ro3.xy();
 
-        let mut ray_dir = self.direction;
-        let mut ray_origin = self.origin;
+        let a = rd.dot(rd);
+        let b = 2.0 * ro.dot(rd);
+        let c = ro.dot(ro) - ra * ra;
 
-        ray_dir = (inv_t * vec4(ray_dir.x, ray_dir.y, ray_dir.z, 0.)).xyz();
-        ray_origin = (inv_t * vec4(ray_origin.x, ray_origin.y, ray_origin.z, 1.)).xyz();
+        let disc = b * b - 4.0 * a * c;
 
-        let ro2d = vec2(ray_origin.x, ray_origin.y);
-        let rd2d = vec2(ray_dir.x, ray_dir.y);
+        let half = height / 2.;
+        if disc > 0.0 {
+            let t1 = (-b - disc.sqrt()) / (2.0 * a);
 
-        let a = rd2d.dot(rd2d);
-        let b = 2. * ro2d.dot(rd2d);
-        let c = ro2d.dot(ro2d) - radius * radius;
+            let h_t1 = ro3 + rd3 * t1;
 
-        let disc = b * b - 4. * a * c;
+            let valid_t1 = h_t1.z.abs() < half;
 
-        if disc < 0.0 {
-            return None;
+            if valid_t1 {
+                let n = vec3(h_t1.x, h_t1.y, 0.0).normalize();
+                let normal = (transform * vec4(n.x, n.y, n.z, 0.0)).xyz();
+                return Some(RayHit {
+                    distance: t1,
+                    point: self.origin + self.direction * t1,
+                    normal,
+                    material_index,
+                    ..Default::default()
+                });
+            }
         }
 
-        let t0 = (-b + disc.sqrt()) / (2.0 * a);
-        let t1 = (-b - disc.sqrt()) / (2.0 * a);
+        //let n1 = vec3(0., 0., 1.);
+        //let denom1 = rd3.dot(n1);
 
-        let hit_point = self.origin + self.direction * t1;
+        // if denom1.abs() < 1e-6 {
+        //     return None;
+        // }
 
-        let mut distances = [f32::MAX, f32::MAX, f32::MAX];
+        //t.at(2) = (bckRay.m_point1.GetElement(2) - 1.0) / -v.GetElement(2);
+        //t.at(3) = (bckRay.m_point1.GetElement(2) + 1.0) / -v.GetElement(2);
 
-        distances[0] = t1;
+        let t1 = (ro3.z - half) / -rd3.z;
 
-        if hit_point.z.abs() > 1.0 {
-            let t0 = (ray_origin.z - 1.0) / -ray_dir.z;
-            let t1 = (ray_origin.z + 1.0) / -ray_dir.z;
+        //let n2 = vec3(0., 0., -1.);
+        //let denom2 = rd3.dot(n2);
+        // if denom2.abs() < 0. {
+        //     return None;
+        // }
+        let t2 = (ro3.z + half) / -rd3.z;
 
-            let hit_point_0 = self.origin + self.direction * t0;
-            let hit_point_1 = self.origin + self.direction * t1;
+        let h_t1 = ro3 + rd3 * t1;
+        let h_t2 = ro3 + rd3 * t2;
 
-            if t0 > 0.
-                && (hit_point_0.x * hit_point_0.x + hit_point_0.y * hit_point_0.y).sqrt() < 1.0
-            {
-                distances[1] = t0;
-            } else if t1 > 0.
-                && (hit_point_1.x * hit_point_1.x + hit_point_1.y * hit_point_1.y).sqrt() < 1.0
-            {
-                distances[2] = t1;
+        let valid_t1 = h_t1.xy().dot(h_t1.xy()) < ra * ra;
+        let valid_t2 = h_t2.xy().dot(h_t2.xy()) < ra * ra;
+
+        let mut t = 0.;
+
+        if valid_t1 && valid_t2 {
+            if t1 < t2 {
+                t = t1;
             } else {
-                return None;
-            }
+                t = t2;
+            };
+        } else if valid_t1 {
+            t = t1;
+        } else if valid_t2 {
+            t = t2;
         } else {
             return None;
         }
 
-        let mut closest = distances[0];
-        if distances[1] < closest {
-            closest = distances[1]
+        let h_t = ro3 + rd3 * t;
+        let n = vec3(0., 0., h_t.z).normalize();
+
+        let normal = (transform * vec4(n.x, n.y, n.z, 0.0)).xyz();
+        return Some(RayHit {
+            distance: t,
+            point: self.origin + self.direction * t,
+            normal,
+            material_index,
+            ..Default::default()
+        });
+    }
+
+    fn cylinder_intersection2(
+        &self,
+        ra: f32,
+        height: f32,
+        pa: Vec3,
+        pb: Vec3,
+        transform: Mat4,
+        inv_transform: Mat4,
+        material_index: usize,
+    ) -> Option<RayHit> {
+        let ro = self.origin;
+        let rd = self.direction;
+
+        let ba = pb - pa;
+        let oc = ro - pa;
+
+        // Dot product of ba with itself, representing the squared length of the cylinder's axis
+        let baba = ba.dot(ba);
+        // Dot product of ba with ray direction (rd), representing alignment of ray with cylinder's axis
+        let bard = ba.dot(rd);
+        // Dot product of ba with oc, representing alignment of the cylinder's axis with the vector to the ray origin
+        let baoc = ba.dot(oc);
+
+        // Quadratic coefficients for solving ray-cylinder intersection
+        let k2 = baba - bard * bard;
+        let k1 = baba * oc.dot(rd) - baoc * bard;
+        let k0 = baba * oc.dot(oc) - baoc * baoc - ra * ra * baba;
+
+        let h = k1 * k1 - k2 * k0;
+        if h < 0.0 {
+            return None;
+        }
+        let h = h.sqrt();
+        let t = (-k1 - h) / k2; // The "t" value where the intersection occurs.
+
+        // Checking intersection with the body of the cylinder.
+        let y = baoc + t * bard;
+        if y > 0.0 && y < baba {
+            let hit_point = self.origin + self.direction * t;
+            return Some(RayHit {
+                distance: t,
+                point: hit_point,
+                normal: (oc + t * rd - ba * y / baba) / ra,
+                material_index,
+                ..Default::default()
+            });
         }
 
-        if distances[2] < closest {
-            closest = distances[2]
+        // Checking intersection with the end caps of the cylinder.
+        let j = if y < 0.0 { 0.0 } else { baba };
+        let t = (j - baoc) / bard;
+
+        if (k1 + k2 * t).abs() >= h {
+            return None;
         }
 
-        let hit_point = self.origin + self.direction * closest;
+        let hit_point = self.origin + self.direction * t;
 
-        let normal = Vec3::ZERO;
+        let normal = ba * y.signum() / baba.sqrt();
         Some(RayHit {
-            distance: t1,
+            distance: t,
             point: hit_point,
             normal,
             material_index,
@@ -353,7 +436,6 @@ impl Ray {
         material_index: usize,
         time: f32,
     ) -> Option<RayHit> {
-
         let mut ray_dir = self.direction;
         let mut ray_origin = self.origin;
 
