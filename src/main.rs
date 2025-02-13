@@ -16,7 +16,7 @@ mod scene;
 mod utils;
 
 pub fn update(s: &mut Scene, ts: f32) -> bool {
-    let speed = 0.4;
+    let speed = 0.2;
     if let Some(Object3D::Box {
         position,
         rotation_axis,
