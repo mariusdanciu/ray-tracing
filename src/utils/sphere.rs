@@ -39,10 +39,10 @@ pub fn sphere_intersection(
 
     let hit_point = ray.origin + ray.direction * t1;
 
-    let n = (hit_point - position).normalize();
+    let n = hit_point - position;
 
     // Move the normal in world space
-    let normal = (transform * vec4(n.x, n.y, n.z, 0.0)).xyz();
+    let normal = (transform * vec4(n.x, n.y, n.z, 0.0)).xyz().normalize();
 
     Some(RayHit {
         distance: t1,

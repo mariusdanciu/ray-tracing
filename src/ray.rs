@@ -209,6 +209,22 @@ impl Ray {
                 *inv_transform,
                 *material_index,
             ),
+
+            Object3D::Cone {
+                radius,
+                height,
+                rotation_axis,
+                transform,
+                inv_transform,
+                material_index,
+            } => utils::cone::cone_intersection(
+                self,
+                *radius,
+                *height,
+                *transform,
+                *inv_transform,
+                *material_index,
+            ),
         }
     }
 }

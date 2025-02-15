@@ -1,6 +1,6 @@
 use core::f32;
 
-use glam::{vec3, vec4, Mat4, Vec3Swizzles, Vec4Swizzles};
+use glam::{vec3, vec4, Mat4, Vec3, Vec3Swizzles, Vec4Swizzles};
 
 use crate::ray::{Ray, RayHit};
 
@@ -15,6 +15,7 @@ pub fn cylinder_intersection(
     let rd3 = (inv_transform * vec4(ray.direction.x, ray.direction.y, ray.direction.z, 0.)).xyz();
     let ro3 = (inv_transform * vec4(ray.origin.x, ray.origin.y, ray.origin.z, 1.)).xyz();
 
+
     let rd = rd3.xy();
     let ro = ro3.xy();
 
@@ -24,13 +25,12 @@ pub fn cylinder_intersection(
 
     let disc = b * b - 4.0 * a * c;
 
-    let half = height / 2.;
     if disc > 0.0 {
         let t1 = (-b - disc.sqrt()) / (2.0 * a);
 
         let h_t1 = ro3 + rd3 * t1;
 
-        let valid_t1 = h_t1.z.abs() < half;
+        let valid_t1 = h_t1.z.abs() < 1.;
 
         if valid_t1 {
             let n = vec3(h_t1.x, h_t1.y, 0.0).normalize();
@@ -39,7 +39,7 @@ pub fn cylinder_intersection(
 
             let u = (h_t1.y / h_t1.x).atan(); // atan2 covers edge cases
 
-            let v = h_t1.z*2.;
+            let v = h_t1.z * 2.;
 
             return Some(RayHit {
                 distance: t1,
@@ -52,9 +52,9 @@ pub fn cylinder_intersection(
         }
     }
 
-    let t1 = (ro3.z - half) / -rd3.z;
+    let t1 = (ro3.z - 1.) / -rd3.z;
 
-    let t2 = (ro3.z + half) / -rd3.z;
+    let t2 = (ro3.z + 1.) / -rd3.z;
 
     let h_t1 = ro3 + rd3 * t1;
     let h_t2 = ro3 + rd3 * t2;
@@ -63,7 +63,6 @@ pub fn cylinder_intersection(
     let valid_t2 = h_t2.xy().dot(h_t2.xy()) < ra * ra;
 
     let mut t = 0.;
-
     if valid_t1 && valid_t2 {
         if t1 < t2 {
             t = t1;
@@ -79,9 +78,9 @@ pub fn cylinder_intersection(
     }
 
     let h_t = ro3 + rd3 * t;
-    let n = vec3(0., 0., h_t.z).normalize();
+    let n = vec3(0., 0., h_t.z);
 
-    let normal = (transform * vec4(n.x, n.y, n.z, 0.0)).xyz();
+    let normal = (transform * vec4(n.x, n.y, n.z, 0.0)).xyz().normalize();
     return Some(RayHit {
         distance: t,
         point: ray.origin + ray.direction * t,

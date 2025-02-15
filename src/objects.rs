@@ -46,6 +46,15 @@ pub enum Object3D {
         inv_transform: Mat4,
         material_index: usize,
     },
+
+    Cone {
+        radius: f32,
+        height: f32,
+        rotation_axis: Vec3,
+        transform: Mat4,
+        inv_transform: Mat4,
+        material_index: usize,
+    },
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -249,11 +258,34 @@ impl Object3D {
         material_index: usize,
     ) -> Object3D {
         let t = Mat4::from_translation(position)
-            * Mat4::from_scale(vec3(1.0, 1.0, 1.0))
             * Mat4::from_rotation_x(rotation_axis.x * geometry::DEGREES)
             * Mat4::from_rotation_y(rotation_axis.y * geometry::DEGREES)
-            * Mat4::from_rotation_z(rotation_axis.z * geometry::DEGREES);
+            * Mat4::from_rotation_z(rotation_axis.z * geometry::DEGREES)
+            * Mat4::from_scale(vec3(1.0, 1.0, 0.5));
         Object3D::Cylinder {
+            radius,
+            height,
+            rotation_axis,
+            transform: t,
+            inv_transform: t.inverse(),
+            material_index,
+        }
+    }
+
+    pub fn new_cone(
+        position: Vec3,
+        height: f32,
+        rotation_axis: Vec3,
+        radius: f32,
+        material_index: usize,
+    ) -> Object3D {
+        let t = Mat4::from_translation(position)
+            * Mat4::from_rotation_x(rotation_axis.x * geometry::DEGREES)
+            * Mat4::from_rotation_y(rotation_axis.y * geometry::DEGREES)
+            * Mat4::from_rotation_z(rotation_axis.z * geometry::DEGREES)
+            * Mat4::from_scale(vec3(radius, radius, height));
+
+        Object3D::Cone {
             radius,
             height,
             rotation_axis,

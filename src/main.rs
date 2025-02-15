@@ -56,8 +56,14 @@ pub fn main() -> Result<(), AppError> {
         Object3D::new_sphere(Vec3::new(-1., 0., 0.), 0.5, 2),
         Object3D::new_sphere(Vec3::new(1.5, 0., 0.), 0.5, 4),
         Object3D::new_plane(vec3(0., 1., 0.), vec3(0., -0.5, 0.), 1, Some(vec2(5., 5.))),
-        Object3D::new_box(vec3(-1.0, 1.3, 2.), vec3(0., 0., 0.), vec3(0.5, 1.5, 0.5), 3),
-        Object3D::new_cylinder(vec3(3.3, 0.1, 2.1), 1., vec3(120., 0., 0.), 0.4, 5),
+        Object3D::new_box(
+            vec3(-1.0, 1.3, 2.),
+            vec3(0., 0., 0.),
+            vec3(0.5, 1.5, 0.5),
+            3,
+        ),
+        Object3D::new_cylinder(vec3(2.3, 0., 3.0), 1., vec3(90., 0., 0.), 0.4, 6),
+        Object3D::new_cone(vec3(2.3, 0.5, 2.), 1., vec3(90., 0., 0.), 0.5, 5),
     ];
 
     let mut scene1 = Scene::new(
@@ -115,13 +121,22 @@ pub fn main() -> Result<(), AppError> {
                 ..Default::default()
             },
             Material {
-                ambience: 0.4,
-                diffuse: 0.8,
+                ambience: 0.3,
+                diffuse: 0.1,
                 shininess: 80.,
-                specular: 0.4,
+                specular: 0.1,
                 albedo: Vec3::new(0.7, 0.3, 0.5),
                 kind: MaterialType::Reflective { roughness: 0.4 },
                 texture: Some(2),
+                ..Default::default()
+            },
+            Material {
+                ambience: 0.4,
+                diffuse: 0.3,
+                shininess: 40.,
+                specular: 0.4,
+                albedo: Vec3::new(0.9, 0.3, 0.5),
+                kind: MaterialType::Reflective { roughness: 0.4 },
                 ..Default::default()
             },
         ],
