@@ -53,7 +53,7 @@ pub fn update(s: &mut Scene, ts: f32) -> bool {
 pub fn main() -> Result<(), AppError> {
     let objs = vec![
         Object3D::new_sphere(Vec3::new(1.2, 0., 2.5), 0.5, 0),
-        Object3D::new_sphere_with_rotation(Vec3::new(-1., 0., 0.), vec3(-90., 0., 60.), 0.5, 2),
+        Object3D::new_sphere_with_rotation(Vec3::new(3.0, 0.5, 0.5), vec3(-90., 0., 0.), 0.7, 2),
         Object3D::new_sphere(Vec3::new(1.5, 0., 0.), 0.5, 4),
         Object3D::new_plane(vec3(0., 1., 0.), vec3(0., -0.5, 0.), 1, Some(vec2(5., 5.))),
         Object3D::new_box(
@@ -93,13 +93,13 @@ pub fn main() -> Result<(), AppError> {
                 ..Default::default()
             },
             Material {
-                ambience: 0.4,
-                diffuse: 2.8,
-                shininess: 30.,
-                specular: 2.2,
+                ambience: 0.2,
+                diffuse: 0.8,
+                shininess: 200.,
+                specular: 1.2,
                 albedo: Vec3::new(0.0, 0.2, 0.9),
                 texture: Some(3),
-                kind: MaterialType::Reflective { roughness: 1. },
+                kind: MaterialType::Reflective { roughness: 0.6 },
                 ..Default::default()
             },
             Material {
