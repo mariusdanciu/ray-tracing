@@ -156,10 +156,8 @@ impl Ray {
                 inv_transform,
             } => utils::sphere::sphere_intersection(
                 self,
-                *position,
                 *transform,
                 *inv_transform,
-                radius,
                 *material_index,
             ),
 

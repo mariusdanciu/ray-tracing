@@ -89,7 +89,7 @@ impl Texture {
         if p < 0. {
             return 1. - (p.ceil() - p).abs();
         } else if p > 1. {
-            return (p - p.floor());
+            return p - p.floor();
         }
         p
     }
@@ -190,7 +190,7 @@ impl Object3D {
         }
     }
     pub fn new_sphere(origin: Vec3, radius: f32, material_index: usize) -> Object3D {
-        let t = Mat4::from_translation(origin);
+        let t = Mat4::from_translation(origin) * Mat4::from_scale(vec3(radius, radius, radius));
         Object3D::Sphere {
             position: origin,
             rotation_axis: Vec3::ZERO,
@@ -210,7 +210,8 @@ impl Object3D {
         let t = Mat4::from_translation(origin)
             * Mat4::from_rotation_x(rotation_axis.x * geometry::DEGREES)
             * Mat4::from_rotation_y(rotation_axis.y * geometry::DEGREES)
-            * Mat4::from_rotation_z(rotation_axis.z * geometry::DEGREES);
+            * Mat4::from_rotation_z(rotation_axis.z * geometry::DEGREES)
+            * Mat4::from_scale(vec3(radius, radius, radius));
         Object3D::Sphere {
             position: origin,
             rotation_axis,
