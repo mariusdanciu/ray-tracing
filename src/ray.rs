@@ -2,7 +2,7 @@ use glam::{vec2, vec3, vec4, Mat4, Vec2, Vec3, Vec3Swizzles, Vec4, Vec4Swizzles}
 use rand::{rngs::ThreadRng, Rng};
 
 use crate::{
-    objects::{Material, Object3D},
+    objects::{Intersection, Material, Object3D},
     scene::Light,
     utils::{self, geometry},
 };
@@ -145,84 +145,14 @@ impl Ray {
         })
     }
 
-    pub fn hit(&self, obj: &Object3D, time: f32) -> Option<RayHit> {
+    pub fn hit(&self, obj: &Object3D) -> Option<RayHit> {
         match obj {
-            Object3D::Sphere {
-                position,
-                rotation_axis,
-                radius,
-                material_index,
-                transform,
-                inv_transform,
-            } => utils::sphere::sphere_intersection(
-                self,
-                *transform,
-                *inv_transform,
-                *material_index,
-            ),
-
-            Object3D::Triangle {
-                v1,
-                v2,
-                v3,
-                material_index,
-            } => utils::triangle::triangle_intersection(self, *v1, *v2, *v3, *material_index),
-
-            Object3D::Box {
-                position,
-                rotation_axis,
-                transform,
-                inv_transform,
-                dimension,
-                material_index,
-            } => utils::cuboid::box_intersection(
-                self,
-                *dimension,
-                *transform,
-                *inv_transform,
-                *material_index,
-            ),
-
-            Object3D::Plane {
-                normal,
-                point,
-                max_dist,
-                material_index,
-            } => {
-                utils::plane::plane_intersection(self, *normal, *point, *max_dist, *material_index)
-            }
-
-            Object3D::Cylinder {
-                radius,
-                height,
-                rotation_axis,
-                transform,
-                inv_transform,
-                material_index,
-            } => utils::cylinder::cylinder_intersection(
-                self,
-                *radius,
-                *height,
-                *transform,
-                *inv_transform,
-                *material_index,
-            ),
-
-            Object3D::Cone {
-                radius,
-                height,
-                rotation_axis,
-                transform,
-                inv_transform,
-                material_index,
-            } => utils::cone::cone_intersection(
-                self,
-                *radius,
-                *height,
-                *transform,
-                *inv_transform,
-                *material_index,
-            ),
+            Object3D::Sphere(s) => s.intersect(self),
+            Object3D::Triangle(s) => s.intersect(self),
+            Object3D::Cuboid(s) => s.intersect(self),
+            Object3D::Plane(s) => s.intersect(self),
+            Object3D::Cylinder(s) => s.intersect(self),
+            Object3D::Cone(s) => s.intersect(self),
         }
     }
 }

@@ -5,7 +5,10 @@ use camera::Camera;
 use glam::{vec2, vec3, Mat4, Vec2, Vec3};
 use objects::{Material, MaterialType, Object3D};
 use scene::Scene;
-use utils::{errors::AppError, geometry, image::ImageUtils};
+use utils::{
+    cone::Cone, cuboid::Cuboid, cylinder::Cylinder, errors::AppError, geometry, image::ImageUtils,
+    plane::Plane, sphere::Sphere,
+};
 
 mod app;
 mod camera;
@@ -17,53 +20,32 @@ mod utils;
 
 pub fn update(s: &mut Scene, ts: f32) -> bool {
     let speed = 0.2;
-    if let Some(Object3D::Box {
-        position,
-        rotation_axis,
-        transform,
-        inv_transform,
-        dimension,
-        material_index,
-    }) = s.objects.iter_mut().find(|obj| match **obj {
-        Object3D::Box { .. } => true,
+    if let Some(Object3D::Cuboid(c)) = s.objects.iter_mut().find(|obj| match **obj {
+        Object3D::Cuboid { .. } => true,
         _ => false,
     }) {
-        rotation_axis.x += 2. * speed;
-        rotation_axis.z += 4. * speed;
-        rotation_axis.y += 2. * speed;
-
-        let t = Mat4::from_translation(*position)
-            * Mat4::from_rotation_x(rotation_axis.x * geometry::DEGREES)
-            * Mat4::from_rotation_y(rotation_axis.y * geometry::DEGREES)
-            * Mat4::from_rotation_z(rotation_axis.z * geometry::DEGREES);
-        transform.x_axis = t.x_axis;
-        transform.y_axis = t.y_axis;
-        transform.z_axis = t.z_axis;
-        transform.w_axis = t.w_axis;
-
-        let inv_t = transform.inverse();
-        inv_transform.x_axis = inv_t.x_axis;
-        inv_transform.y_axis = inv_t.y_axis;
-        inv_transform.z_axis = inv_t.z_axis;
-        inv_transform.w_axis = inv_t.w_axis;
+        c.rotation_axis.x += 2. * speed;
+        c.rotation_axis.z += 4. * speed;
+        c.rotation_axis.y += 2. * speed;
+        c.update();
     };
     true
 }
 
 pub fn main() -> Result<(), AppError> {
     let objs = vec![
-        Object3D::new_sphere(Vec3::new(1.2, 0., 2.5), 0.5, 0),
-        Object3D::new_sphere_with_rotation(Vec3::new(3.0, 0.5, 0.5), vec3(-90., 0., 0.), 0.7, 2),
-        Object3D::new_sphere(Vec3::new(1.5, 0., 0.), 0.5, 4),
-        Object3D::new_plane(vec3(0., 1., 0.), vec3(0., -0.5, 0.), 1, Some(vec2(5., 5.))),
-        Object3D::new_box(
+        Sphere::new(Vec3::new(1.2, 0., 2.5), 0.5, 0),
+        Sphere::new_sphere_with_rotation(Vec3::new(3.0, 0.5, 0.5), vec3(-90., 0., 0.), 0.7, 2),
+        Sphere::new(Vec3::new(1.5, 0., 0.), 0.5, 4),
+        Plane::new(vec3(0., 1., 0.), vec3(0., -0.5, 0.), 1, Some(vec2(5., 5.))),
+        Cuboid::new(
             vec3(-1.0, 1.3, 2.),
             vec3(0., 0., 0.),
-            vec3(0.5, 1.5, 0.5),
+            vec3(0.6, 1., 0.2),
             3,
         ),
-        Object3D::new_cylinder(vec3(2.3, 0., 3.0), 1., vec3(90., 0., 0.), 0.4, 6),
-        Object3D::new_cone(vec3(2.3, 0.5, 2.), 1., vec3(90., 0., 0.), 0.5, 5),
+        Cylinder::new(vec3(2.3, 0., 3.0), 1., vec3(90., 0., 0.), 0.4, 6),
+        Cone::new(vec3(2.3, 0.7, 2.), 0.5, 1., vec3(120., 0., 0.),  5),
     ];
 
     let mut scene1 = Scene::new(
@@ -170,9 +152,9 @@ pub fn main() -> Result<(), AppError> {
         diffuse: true,
         enable_accumulation: true,
         objects: vec![
-            Object3D::new_sphere(Vec3::new(0., -100.5, 0.), 100., 0),
-            Object3D::new_sphere(Vec3::new(10., 15., -34.), 20.0, 1),
-            Object3D::new_sphere(Vec3::new(0., 0.5, -0.5), 1., 2),
+            Sphere::new(Vec3::new(0., -100.5, 0.), 100., 0),
+            Sphere::new(Vec3::new(10., 15., -34.), 20.0, 1),
+            Sphere::new(Vec3::new(0., 0.5, -0.5), 1., 2),
         ],
         materials: vec![
             Material {

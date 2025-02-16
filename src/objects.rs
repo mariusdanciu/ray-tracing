@@ -2,59 +2,20 @@ use std::time::Instant;
 
 use glam::{vec3, Mat4, Vec2, Vec3, Vec4};
 
-use crate::utils::geometry;
+use crate::{ray::{Ray, RayHit}, utils::{cone::Cone, cuboid::Cuboid, cylinder::Cylinder, geometry, plane::Plane, sphere::Sphere, triangle::Triangle}};
+
+pub trait Intersection {
+    fn intersect(&self, ray: &Ray) -> Option<RayHit>;
+}
 
 #[derive(Debug, Copy, Clone)]
 pub enum Object3D {
-    Sphere {
-        position: Vec3,
-        rotation_axis: Vec3,
-        radius: f32,
-        material_index: usize,
-        transform: Mat4,
-        inv_transform: Mat4,
-    },
-
-    Triangle {
-        v1: Vec3,
-        v2: Vec3,
-        v3: Vec3,
-        material_index: usize,
-    },
-
-    Box {
-        position: Vec3,
-        rotation_axis: Vec3,
-        transform: Mat4,
-        inv_transform: Mat4,
-        dimension: Vec3,
-        material_index: usize,
-    },
-
-    Plane {
-        normal: Vec3,
-        point: Vec3,
-        max_dist: Option<Vec2>,
-        material_index: usize,
-    },
-
-    Cylinder {
-        radius: f32,
-        height: f32,
-        rotation_axis: Vec3,
-        transform: Mat4,
-        inv_transform: Mat4,
-        material_index: usize,
-    },
-
-    Cone {
-        radius: f32,
-        height: f32,
-        rotation_axis: Vec3,
-        transform: Mat4,
-        inv_transform: Mat4,
-        material_index: usize,
-    },
+    Sphere(Sphere),
+    Triangle(Triangle),
+    Cuboid(Cuboid),
+    Plane(Plane),
+    Cylinder(Cylinder),
+    Cone(Cone),
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -175,124 +136,3 @@ impl Material {
     }
 }
 
-impl Object3D {
-    pub fn new_plane(
-        normal: Vec3,
-        point: Vec3,
-        material_index: usize,
-        max_dist: Option<Vec2>,
-    ) -> Object3D {
-        Object3D::Plane {
-            normal,
-            point,
-            max_dist,
-            material_index,
-        }
-    }
-    pub fn new_sphere(origin: Vec3, radius: f32, material_index: usize) -> Object3D {
-        let t = Mat4::from_translation(origin) * Mat4::from_scale(vec3(radius, radius, radius));
-        Object3D::Sphere {
-            position: origin,
-            rotation_axis: Vec3::ZERO,
-            radius,
-            material_index,
-            transform: t,
-            inv_transform: t.inverse(),
-        }
-    }
-
-    pub fn new_sphere_with_rotation(
-        origin: Vec3,
-        rotation_axis: Vec3,
-        radius: f32,
-        material_index: usize,
-    ) -> Object3D {
-        let t = Mat4::from_translation(origin)
-            * Mat4::from_rotation_x(rotation_axis.x * geometry::DEGREES)
-            * Mat4::from_rotation_y(rotation_axis.y * geometry::DEGREES)
-            * Mat4::from_rotation_z(rotation_axis.z * geometry::DEGREES)
-            * Mat4::from_scale(vec3(radius, radius, radius));
-        Object3D::Sphere {
-            position: origin,
-            rotation_axis,
-            radius,
-            material_index,
-            transform: t,
-            inv_transform: t.inverse(),
-        }
-    }
-
-    pub fn new_triangle(v1: Vec3, v2: Vec3, v3: Vec3, material_index: usize) -> Object3D {
-        Object3D::Triangle {
-            v1,
-            v2,
-            v3,
-            material_index,
-        }
-    }
-
-    pub fn new_box(
-        position: Vec3,
-        rotation_axis: Vec3,
-        dimension: Vec3,
-        material_index: usize,
-    ) -> Object3D {
-        let t = Mat4::from_translation(position)
-            * Mat4::from_rotation_x(rotation_axis.x * geometry::DEGREES)
-            * Mat4::from_rotation_y(rotation_axis.y * geometry::DEGREES)
-            * Mat4::from_rotation_z(rotation_axis.z * geometry::DEGREES);
-        Object3D::Box {
-            position,
-            rotation_axis,
-            transform: t,
-            inv_transform: t.inverse(),
-            dimension,
-            material_index,
-        }
-    }
-
-    pub fn new_cylinder(
-        position: Vec3,
-        height: f32,
-        rotation_axis: Vec3,
-        radius: f32,
-        material_index: usize,
-    ) -> Object3D {
-        let t = Mat4::from_translation(position)
-            * Mat4::from_rotation_x(rotation_axis.x * geometry::DEGREES)
-            * Mat4::from_rotation_y(rotation_axis.y * geometry::DEGREES)
-            * Mat4::from_rotation_z(rotation_axis.z * geometry::DEGREES)
-            * Mat4::from_scale(vec3(1.0, 1.0, 0.5));
-        Object3D::Cylinder {
-            radius,
-            height,
-            rotation_axis,
-            transform: t,
-            inv_transform: t.inverse(),
-            material_index,
-        }
-    }
-
-    pub fn new_cone(
-        position: Vec3,
-        height: f32,
-        rotation_axis: Vec3,
-        radius: f32,
-        material_index: usize,
-    ) -> Object3D {
-        let t = Mat4::from_translation(position)
-            * Mat4::from_rotation_x(rotation_axis.x * geometry::DEGREES)
-            * Mat4::from_rotation_y(rotation_axis.y * geometry::DEGREES)
-            * Mat4::from_rotation_z(rotation_axis.z * geometry::DEGREES)
-            * Mat4::from_scale(vec3(radius, radius, height));
-
-        Object3D::Cone {
-            radius,
-            height,
-            rotation_axis,
-            transform: t,
-            inv_transform: t.inverse(),
-            material_index,
-        }
-    }
-}

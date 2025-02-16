@@ -137,7 +137,7 @@ impl Scene {
         let mut closest_hit: Option<(RayHit, Object3D)> = None;
 
         for obj in self.objects.iter() {
-            if let Some(t) = ray.hit(&obj, time) {
+            if let Some(t) = ray.hit(&obj) {
                 if t.distance > 0. && t.distance < closest_t {
                     closest_hit = Some((t, *obj));
                     closest_t = t.distance;
