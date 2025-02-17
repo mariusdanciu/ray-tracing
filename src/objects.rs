@@ -4,6 +4,8 @@ use glam::{vec3, Mat4, Vec2, Vec3, Vec4};
 
 use crate::{ray::{Ray, RayHit}, utils::{cone::Cone, cuboid::Cuboid, cylinder::Cylinder, geometry, plane::Plane, sphere::Sphere, triangle::Triangle}};
 
+static RGB_RATIO: f32 = 1.0 / 255.0;
+
 pub trait Intersection {
     fn intersect(&self, ray: &Ray) -> Option<RayHit>;
 }
@@ -59,9 +61,6 @@ impl Texture {
         let uu = self.textel(u);
         let vv = self.textel(v);
 
-        if uu > 1. || vv > 1. {
-            println!("UV {} {} ", uu, vv);
-        }
         let x = ((self.width - 1) as f32 * uu) as u32;
         let y = ((self.height - 1) as f32 * vv) as u32;
         self.pixel(x, y)
@@ -71,9 +70,9 @@ impl Texture {
         let pos = (y * 3 * self.width + x * 3) as usize;
 
         Vec3::new(
-            (self.bytes[pos] as f32) / 255.,
-            (self.bytes[pos + 1] as f32) / 255.,
-            (self.bytes[pos + 2] as f32) / 255.,
+            (self.bytes[pos] as f32) * RGB_RATIO,
+            (self.bytes[pos + 1] as f32) * RGB_RATIO,
+            (self.bytes[pos + 2] as f32) * RGB_RATIO,
         )
     }
 }

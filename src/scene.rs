@@ -6,7 +6,7 @@ use rand::rngs::ThreadRng;
 use crate::objects::{Material, MaterialType, Object3D, Texture};
 use crate::ray::{Ray, RayHit, EPSILON};
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub enum Light {
     Directional { direction: Vec3, intensity: f32 },
     Positional { position: Vec3, intensity: f32 },
@@ -49,7 +49,7 @@ impl Light {
 
 #[derive(Clone)]
 pub struct Scene {
-    pub light: Light,
+    pub lights: Vec<Light>,
     pub ambient_color: Vec3,
     pub objects: Vec<Object3D>,
     pub materials: Vec<Material>,
@@ -65,10 +65,7 @@ pub struct Scene {
 impl Default for Scene {
     fn default() -> Self {
         Self {
-            light: Light::Directional {
-                direction: Default::default(),
-                intensity: 1.,
-            },
+            lights: vec![],
             ambient_color: Default::default(),
             objects: Default::default(),
             materials: Default::default(),
@@ -86,10 +83,6 @@ impl Default for Scene {
 impl Scene {
     pub fn new(objects: Vec<Object3D>, materials: Vec<Material>) -> Scene {
         Scene {
-            light: Light::Directional {
-                direction: vec3(1., -1., -1.).normalize(),
-                intensity: 1.,
-            },
             ambient_color: vec3(0.0, 0.0, 0.0),
             objects,
             materials,
@@ -111,7 +104,7 @@ impl Scene {
 
     pub fn with_light(&self, light: Light) -> Scene {
         let mut s = self.clone();
-        s.light = light;
+        s.lights.push(light);
         s
     }
 
@@ -127,7 +120,7 @@ impl Scene {
         s
     }
 
-    fn trace_ray(&self, ray: Ray, time: f32) -> Option<(RayHit, Object3D)> {
+    fn trace_ray(&self, ray: Ray) -> Option<(RayHit, Object3D)> {
         if self.objects.is_empty() {
             return None;
         }
@@ -160,7 +153,7 @@ impl Scene {
         if depth >= self.max_ray_bounces {
             return light_color;
         }
-        if let Some((hit, object)) = self.trace_ray(ray, time) {
+        if let Some((hit, object)) = self.trace_ray(ray) {
             let material = self.materials[hit.material_index];
             let mut albedo = material.albedo;
 
@@ -231,6 +224,40 @@ impl Scene {
         }
     }
 
+    fn light(&self, ray: &Ray, hit: &RayHit, albedo: Vec3, material: &Material) -> Vec3 {
+        let mut l_acc = Vec3::ZERO;
+        for l in &self.lights {
+            let k = ray.blinn_phong(&hit, l, albedo, material);
+            let light_dis = l.distance(hit.point);
+            l_acc += (k / (light_dis * light_dis)) * l.intensity();
+
+            if self.shadow_casting {
+                if let Some(obj) = self.trace_ray(Ray {
+                    origin: hit.point + EPSILON * hit.normal,
+                    direction: -l.direction(hit.point),
+                }) {
+                    // in the shadow
+                    l_acc *= 0.5;
+                }
+            }
+        }
+        l_acc
+    }
+
+    fn shadow(&self, color: Vec3, hit: &RayHit) -> Vec3 {
+        let mut col = color;
+        for l in &self.lights {
+            if let Some(obj) = self.trace_ray(Ray {
+                origin: hit.point + EPSILON * hit.normal,
+                direction: -l.direction(hit.point),
+            }) {
+                // in the shadow
+                col *= 0.5;
+            }
+        }
+        col
+    }
+
     fn color(
         &self,
         ray: Ray,
@@ -243,7 +270,7 @@ impl Scene {
         if depth >= self.max_ray_bounces {
             return light_color;
         }
-        if let Some((hit, object)) = self.trace_ray(ray, time) {
+        if let Some((hit, object)) = self.trace_ray(ray) {
             let material = self.materials[hit.material_index];
             let mut albedo = material.albedo;
 
@@ -253,7 +280,7 @@ impl Scene {
                         albedo = self.textures[idx].from_uv(hit.u, hit.v);
                     }
 
-                    let p_light = ray.blinn_phong(&hit, &self.light, albedo, &material);
+                    let p_light = self.light(&ray, &hit, albedo, &material);
 
                     let r = ray.reflection_ray(
                         hit,
@@ -266,24 +293,9 @@ impl Scene {
                     let reflected_col =
                         self.color(r, rnd, depth + 1, p_light, contribution * albedo, time);
 
-                    let mut col =
-                        p_light * (roughness) + p_light * reflected_col * (1. - roughness);
-
-                    if self.shadow_casting {
-                        if let Some(obj) = self.trace_ray(
-                            Ray {
-                                origin: hit.point + EPSILON * hit.normal,
-                                direction: -self.light.direction(hit.point),
-                            },
-                            time,
-                        ) {
-                            // in the shadow
-                            col *= 0.5;
-                        }
-                    }
-                    let light_dis = self.light.distance(hit.point);
-                    col / (light_dis * light_dis) * self.light.intensity()
+                    p_light * (roughness) + p_light * reflected_col * (1. - roughness)
                 }
+
                 MaterialType::Refractive {
                     transparency,
                     refraction_index,
@@ -310,7 +322,8 @@ impl Scene {
                         direction: ray.reflect(hit.normal),
                     };
 
-                    let p_light = ray.blinn_phong(&hit, &self.light, albedo, &material);
+                    let p_light = self.light(&ray, &hit, albedo, &material);
+
                     let reflection_color = self.color(
                         reflection_ray,
                         rnd,
@@ -323,7 +336,7 @@ impl Scene {
                     let color =
                         reflection_color * kr + refraction_color * (1.0 - kr) * transparency;
 
-                    color*albedo
+                    color * albedo
                 }
             }
         } else {

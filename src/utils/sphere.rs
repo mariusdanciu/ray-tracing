@@ -11,10 +11,10 @@ use super::geometry;
 
 #[derive(Debug, Clone, Copy, Default)]
 pub struct Sphere {
-    position: Vec3,
-    rotation_axis: Vec3,
-    radius: f32,
-    material_index: usize,
+    pub position: Vec3,
+    pub rotation_axis: Vec3,
+    pub radius: f32,
+    pub material_index: usize,
     transform: Mat4,
     inv_transform: Mat4,
 }

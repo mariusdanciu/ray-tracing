@@ -7,10 +7,10 @@ use crate::{
 
 #[derive(Debug, Clone, Copy)]
 pub struct Plane {
-    normal: Vec3,
-    point: Vec3,
-    max_dist: Option<Vec2>,
-    material_index: usize,
+    pub normal: Vec3,
+    pub point: Vec3,
+    pub max_dist: Option<Vec2>,
+    pub material_index: usize,
 }
 impl Plane {
     pub fn new(normal: Vec3, point: Vec3, material_index: usize, max_dist: Option<Vec2>) -> Object3D {

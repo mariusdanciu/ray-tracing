@@ -38,14 +38,9 @@ pub fn main() -> Result<(), AppError> {
         Sphere::new_sphere_with_rotation(Vec3::new(3.0, 0.5, 0.5), vec3(-90., 0., 0.), 0.7, 2),
         Sphere::new(Vec3::new(1.5, 0., 0.), 0.5, 4),
         Plane::new(vec3(0., 1., 0.), vec3(0., -0.5, 0.), 1, Some(vec2(5., 5.))),
-        Cuboid::new(
-            vec3(-1.0, 1.3, 2.),
-            vec3(0., 0., 0.),
-            vec3(0.6, 1., 0.2),
-            3,
-        ),
+        Cuboid::new(vec3(-1.0, 1.3, 2.), vec3(0., 0., 0.), vec3(0.6, 1., 0.2), 3),
         Cylinder::new(vec3(2.3, 0., 3.0), 1., vec3(90., 0., 0.), 0.4, 6),
-        Cone::new(vec3(2.3, 0.7, 2.), 0.5, 1., vec3(120., 0., 0.),  5),
+        Cone::new(vec3(2.3, 0.7, 2.), 0.5, 1., vec3(120., 0., 0.), 5),
     ];
 
     let mut scene1 = Scene::new(
@@ -133,6 +128,10 @@ pub fn main() -> Result<(), AppError> {
         .with_light(scene::Light::Positional {
             position: vec3(2., 2., 2.),
             intensity: 5.,
+        })
+        .with_light(scene::Light::Positional {
+            position: vec3(3., 2., -2.),
+            intensity: 4.,
         });
     //scene1.ambient_color = vec3(0.4, 0.7, 1.);
     scene1.update_func = Some(update);
@@ -144,10 +143,6 @@ pub fn main() -> Result<(), AppError> {
     let scene2 = Scene {
         max_ray_bounces: 5,
         max_frames_rendering: 10000,
-        light: scene::Light::Directional {
-            direction: vec3(1., -1., -1.).normalize(),
-            intensity: 2.,
-        },
         ambient_color: vec3(0., 0., 0.),
         diffuse: true,
         enable_accumulation: true,

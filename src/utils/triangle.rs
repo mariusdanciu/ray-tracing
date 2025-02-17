@@ -7,10 +7,10 @@ use crate::{
 
 #[derive(Debug, Clone, Copy)]
 pub struct Triangle {
-    v1: Vec3,
-    v2: Vec3,
-    v3: Vec3,
-    material_index: usize,
+    pub v1: Vec3,
+    pub v2: Vec3,
+    pub v3: Vec3,
+    pub material_index: usize,
 }
 
 impl Triangle {

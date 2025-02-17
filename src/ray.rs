@@ -65,6 +65,7 @@ impl Ray {
 
         ambience + diffuse + specular
     }
+    
     pub fn phong(&self, hit: &RayHit, light: &Light, color: Vec3, material: &Material) -> Vec3 {
         let coeff = hit.normal.dot(-light.direction(hit.point));
         let ambience = material.ambience * color;
