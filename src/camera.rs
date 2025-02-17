@@ -129,10 +129,13 @@ impl Camera {
         let mut y = 0;
         let mut x = 0;
 
+        let inv_w = 1. / self.width as f32;
+        let inv_h = 1. / self.height as f32;
+
         while y < self.height {
             while x < self.width {
-                let p_ndc_x = (x as f32) / self.width as f32;
-                let p_ndc_y = (y as f32) / self.height as f32;
+                let p_ndc_x = (x as f32) * inv_w;
+                let p_ndc_y = (y as f32) * inv_h;
 
                 let p_screen_x = 2.0 * p_ndc_x - 1.;
                 let p_screen_y = 2.0 * p_ndc_y - 1.;

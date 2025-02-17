@@ -9,6 +9,7 @@ use crate::{
 
 use super::geometry;
 
+static INV_PI: f32 = 1. / f32::consts::PI;
 #[derive(Debug, Clone, Copy, Default)]
 pub struct Sphere {
     pub position: Vec3,
@@ -113,8 +114,8 @@ impl Intersection for Sphere {
             point: ray.origin + ray.direction * t1,
             normal,
             material_index: self.material_index,
-            u: v / f32::consts::PI,
-            v: u / f32::consts::PI,
+            u: v * INV_PI,
+            v: u * INV_PI,
         })
     }
 }

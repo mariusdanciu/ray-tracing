@@ -98,9 +98,10 @@ impl Intersection for Cylinder {
             }
         }
 
-        let t1 = (ro3.z - 0.5) / -rd3.z;
+        let inv_rd3z = -1./rd3.z;
+        let t1 = (ro3.z - 0.5) * inv_rd3z;
 
-        let t2 = (ro3.z + 0.5) / -rd3.z;
+        let t2 = (ro3.z + 0.5) * inv_rd3z;
 
         let h_t1 = ro3 + rd3 * t1;
         let h_t2 = ro3 + rd3 * t2;
