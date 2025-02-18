@@ -13,7 +13,7 @@ pub struct Plane {
     pub material_index: usize,
 }
 impl Plane {
-    pub fn new(normal: Vec3, point: Vec3, material_index: usize, max_dist: Option<Vec2>) -> Object3D {
+    pub fn new(normal: Vec3, point: Vec3, max_dist: Option<Vec2>, material_index: usize,) -> Object3D {
         Object3D::Plane(Plane {
             normal,
             point,

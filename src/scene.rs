@@ -88,7 +88,7 @@ impl Scene {
             materials,
             textures: vec![],
             diffuse: false,
-            max_ray_bounces: 5,
+            max_ray_bounces: 4,
             ..Default::default()
         }
     }
@@ -242,20 +242,6 @@ impl Scene {
             }
         }
         l_acc
-    }
-
-    fn shadow(&self, color: Vec3, hit: &RayHit) -> Vec3 {
-        let mut col = color;
-        for l in &self.lights {
-            if let Some(obj) = self.trace_ray(Ray {
-                origin: hit.point + EPSILON * hit.normal,
-                direction: -l.direction(hit.point),
-            }) {
-                // in the shadow
-                col *= 0.5;
-            }
-        }
-        col
     }
 
     fn color(

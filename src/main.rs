@@ -35,12 +35,12 @@ pub fn update(s: &mut Scene, ts: f32) -> bool {
 pub fn main() -> Result<(), AppError> {
     let objs = vec![
         Sphere::new(Vec3::new(1.2, 0., 2.5), 0.5, 0),
+        Plane::new(vec3(0., 1., 0.), vec3(0., -0.5, 0.), Some(vec2(5., 5.)), 1),
         Sphere::new_sphere_with_rotation(Vec3::new(3.0, 0.5, 0.5), vec3(-90., 0., 0.), 0.7, 2),
-        Sphere::new(Vec3::new(1.5, 0., 0.), 0.5, 4),
-        Plane::new(vec3(0., 1., 0.), vec3(0., -0.5, 0.), 1, Some(vec2(5., 5.))),
         Cuboid::new(vec3(-1.0, 1.3, 2.), vec3(0., 0., 0.), vec3(0.6, 1., 0.2), 3),
-        Cylinder::new(vec3(2.3, 0., 3.0), 1., vec3(90., 0., 0.), 0.4, 6),
+        Sphere::new(Vec3::new(1.5, 0., 0.), 0.5, 4),
         Cone::new(vec3(2.3, 0.7, 2.), 0.5, 1., vec3(120., 0., 0.), 5),
+        Cylinder::new(vec3(2.3, 0., 3.0), 1., vec3(90., 0., 0.), 0.4, 6),
     ];
 
     let mut scene1 = Scene::new(
@@ -103,9 +103,9 @@ pub fn main() -> Result<(), AppError> {
                 diffuse: 0.1,
                 shininess: 80.,
                 specular: 0.1,
-                albedo: Vec3::new(0.7, 0.3, 0.5),
+                albedo: Vec3::new(0.3, 0.7, 0.5),
                 kind: MaterialType::Reflective { roughness: 0.4 },
-                texture: Some(2),
+                texture: Some(0),
                 ..Default::default()
             },
             Material {
