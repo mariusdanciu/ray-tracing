@@ -120,19 +120,19 @@ impl Scene {
         s
     }
 
-    fn trace_ray(&self, ray: Ray) -> Option<(RayHit, Object3D)> {
+    fn trace_ray(&self, ray: Ray) -> Option<(RayHit, usize)> {
         if self.objects.is_empty() {
             return None;
         }
 
         let mut closest_t = f32::MAX;
 
-        let mut closest_hit: Option<(RayHit, Object3D)> = None;
+        let mut closest_hit: Option<(RayHit, usize)> = None;
 
-        for obj in self.objects.iter() {
+        for (idx, obj) in self.objects.iter().enumerate() {
             if let Some(t) = ray.hit(&obj) {
                 if t.distance > 0. && t.distance < closest_t {
-                    closest_hit = Some((t, *obj));
+                    closest_hit = Some((t, idx));
                     closest_t = t.distance;
                 }
             }
@@ -153,7 +153,7 @@ impl Scene {
         if depth >= self.max_ray_bounces {
             return light_color;
         }
-        if let Some((hit, object)) = self.trace_ray(ray) {
+        if let Some((hit, obj_index)) = self.trace_ray(ray) {
             let material = self.materials[hit.material_index];
             let mut albedo = material.albedo;
 
@@ -224,7 +224,14 @@ impl Scene {
         }
     }
 
-    fn light(&self, ray: &Ray, hit: &RayHit, albedo: Vec3, material: &Material) -> Vec3 {
+    fn light(
+        &self,
+        ray: &Ray,
+        hit: &RayHit,
+        albedo: Vec3,
+        material: &Material,
+        obj_index: usize,
+    ) -> Vec3 {
         let mut l_acc = Vec3::ZERO;
         for l in &self.lights {
             let k = ray.blinn_phong(&hit, l, albedo, material);
@@ -232,12 +239,14 @@ impl Scene {
             l_acc += (k / (light_dis * light_dis)) * l.intensity();
 
             if self.shadow_casting {
-                if let Some(obj) = self.trace_ray(Ray {
+                if let Some((hit, idx)) = self.trace_ray(Ray {
                     origin: hit.point + EPSILON * hit.normal,
                     direction: -l.direction(hit.point),
                 }) {
-                    // in the shadow
-                    l_acc *= 0.5;
+                    if idx != obj_index {
+                        // in the shadow
+                        l_acc *= 0.5;
+                    }
                 }
             }
         }
@@ -256,7 +265,7 @@ impl Scene {
         if depth >= self.max_ray_bounces {
             return light_color;
         }
-        if let Some((hit, object)) = self.trace_ray(ray) {
+        if let Some((hit, obj_index)) = self.trace_ray(ray) {
             let material = self.materials[hit.material_index];
             let mut albedo = material.albedo;
 
@@ -266,7 +275,7 @@ impl Scene {
                         albedo = self.textures[idx].from_uv(hit.u, hit.v);
                     }
 
-                    let p_light = self.light(&ray, &hit, albedo, &material);
+                    let p_light = self.light(&ray, &hit, albedo, &material, obj_index);
 
                     let r = ray.reflection_ray(
                         hit,
@@ -308,7 +317,7 @@ impl Scene {
                         direction: ray.reflect(hit.normal),
                     };
 
-                    let p_light = self.light(&ray, &hit, albedo, &material);
+                    let p_light = self.light(&ray, &hit, albedo, &material, obj_index);
 
                     let reflection_color = self.color(
                         reflection_ray,

@@ -138,7 +138,6 @@ pub fn main() -> Result<(), AppError> {
     scene1.diffuse = false;
     scene1.enable_accumulation = false;
     scene1.shadow_casting = false;
-    scene1.max_frames_rendering = 5000;
 
     let scene2 = Scene {
         max_ray_bounces: 5,
