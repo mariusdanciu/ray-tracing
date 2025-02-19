@@ -58,33 +58,30 @@ impl Intersection for Triangle {
         let b_n = b_test.dot(normal) > 0.;
         let c_n = c_test.dot(normal) > 0.;
 
-        let inside = a_n && b_n && c_n;
-        let back_face = !a_n && !b_n && !c_n;
-
-        if inside || back_face {
-            let n = normal;
-
-            let sign = -ray.direction.dot(n).signum();
-
-            // Triangle ABP
-            let abp_area = edge_ab.cross(a_to_hit);
-            let u = abp_area.dot(n) ;
-
-            // Triangle CAP
-            let cap_area = edge_ca.cross(c_to_hit);
-            let v = cap_area.dot(n);
-
-            return Some(RayHit {
-                distance: t,
-                point: hit_point,
-                normal: (sign * n).normalize(),
-                material_index: self.material_index,
-                u,
-                v,
-            });
+        if !(a_n && b_n && c_n) {
+            return None;
         }
 
-        return None;
+        let n = normal;
+
+        let sign = -ray.direction.dot(n).signum();
+
+        // Triangle ABP
+        let abp_area = edge_ab.cross(a_to_hit);
+        let u = abp_area.dot(n);
+
+        // Triangle CAP
+        let cap_area = edge_ca.cross(c_to_hit);
+        let v = cap_area.dot(n);
+
+        return Some(RayHit {
+            distance: t,
+            point: hit_point,
+            normal: (sign * n).normalize(),
+            material_index: self.material_index,
+            u,
+            v,
+        });
 
         // Moller - Trombore
         // -----------------
