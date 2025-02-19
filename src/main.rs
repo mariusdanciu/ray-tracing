@@ -7,7 +7,7 @@ use objects::{Material, MaterialType, Object3D};
 use scene::Scene;
 use utils::{
     cone::Cone, cuboid::Cuboid, cylinder::Cylinder, errors::AppError, geometry, image::ImageUtils,
-    plane::Plane, sphere::Sphere,
+    plane::Plane, sphere::Sphere, triangle::Triangle,
 };
 
 mod app;
@@ -36,11 +36,17 @@ pub fn main() -> Result<(), AppError> {
     let objs = vec![
         Sphere::new(Vec3::new(1.2, 0., 2.5), 0.5, 0),
         Plane::new(vec3(0., 1., 0.), vec3(0., -0.5, 0.), Some(vec2(5., 5.)), 1),
-        Sphere::new_sphere_with_rotation(Vec3::new(3.0, 0.5, 0.5), vec3(-90., 0., 0.), 0.7, 2),
+        Sphere::new_sphere_with_rotation(Vec3::new(3.0, 0.5, 0.8), vec3(-90., 0., 0.), 0.7, 2),
         Cuboid::new(vec3(-1.0, 1.3, 2.), vec3(0., 0., 0.), vec3(0.6, 1., 0.2), 3),
         Sphere::new(Vec3::new(1.5, 0., 0.), 0.5, 4),
         Cone::new(vec3(2.3, 0.7, 2.), 0.5, 1., vec3(120., 0., 0.), 5),
         Cylinder::new(vec3(2.3, 0., 3.0), 1., vec3(90., 0., 0.), 0.4, 6),
+        Triangle::new(
+            Vec3::new(1.5, 1., 0.),
+            Vec3::new(1.5, 0., 0.),
+            Vec3::new(2.5, 1., 0.),
+            1,
+        ),
     ];
 
     let mut scene1 = Scene::new(
@@ -113,7 +119,7 @@ pub fn main() -> Result<(), AppError> {
                 diffuse: 0.3,
                 shininess: 40.,
                 specular: 0.8,
-                albedo: Vec3::new(0.9, 0.3, 0.5),
+                albedo: Vec3::new(0.1, 0.5, 0.9),
                 kind: MaterialType::Reflective { roughness: 0.4 },
                 ..Default::default()
             },
@@ -131,7 +137,7 @@ pub fn main() -> Result<(), AppError> {
         })
         .with_light(scene::Light::Positional {
             position: vec3(3., 2., -2.),
-            intensity: 4.,
+            intensity: 6.,
         });
     //scene1.ambient_color = vec3(0.4, 0.7, 1.);
     scene1.update_func = Some(update);
