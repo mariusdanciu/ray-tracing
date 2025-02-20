@@ -1,9 +1,8 @@
 use glam::Vec2;
 use sdl2::event::{Event, WindowEvent};
 
-use sdl2::keyboard::{Keycode, Mod};
+use sdl2::keyboard::Keycode;
 use sdl2::pixels::PixelFormatEnum;
-use sdl2::render::TextureQuery;
 use std::time::Instant;
 
 use crate::camera::{Camera, CameraEvent};

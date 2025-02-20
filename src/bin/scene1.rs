@@ -1,22 +1,17 @@
-use std::time::Instant;
 
-use app::App;
-use camera::Camera;
-use glam::{vec2, vec3, Mat4, Vec2, Vec3};
-use objects::{Material, MaterialType, Object3D};
-use scene::Scene;
-use utils::{
-    cone::Cone, cuboid::Cuboid, cylinder::Cylinder, errors::AppError, geometry, image::ImageUtils,
+
+use ray_tracing::app::App;
+use ray_tracing::camera::Camera;
+use glam::{vec2, vec3, Vec3};
+use ray_tracing::objects::{Material, MaterialType, Object3D};
+use ray_tracing::scene::{Scene, Light};
+use ray_tracing::renderer::Renderer;
+use ray_tracing::utils::{
+    cone::Cone, cuboid::Cuboid, cylinder::Cylinder, errors::AppError, image::ImageUtils,
     plane::Plane, sphere::Sphere, triangle::Triangle,
 };
 
-mod app;
-mod camera;
-mod objects;
-mod ray;
-mod renderer;
-mod scene;
-mod utils;
+
 
 pub fn update(s: &mut Scene, ts: f32) -> bool {
     let speed = 0.2;
@@ -131,11 +126,11 @@ pub fn main() -> Result<(), AppError> {
         .with_texture(ImageUtils::load_image("./resources/wood.png")?)
         .with_texture(ImageUtils::load_image("./resources/stone3.jpg")?)
         .with_texture(ImageUtils::load_image("./resources/earth_clouds.jpg")?)
-        .with_light(scene::Light::Positional {
+        .with_light(Light::Positional {
             position: vec3(2., 2., 2.),
             intensity: 5.,
         })
-        .with_light(scene::Light::Positional {
+        .with_light(Light::Positional {
             position: vec3(3., 2., -2.),
             intensity: 6.,
         });
@@ -179,7 +174,7 @@ pub fn main() -> Result<(), AppError> {
         ..Default::default()
     };
 
-    let mut renderer = renderer::Renderer::new(scene1);
+    let mut renderer = Renderer::new(scene1);
     let mut camera = Camera::new_with_pos(
         Vec3::new(3.8536084, 0.75215954, 4.388293),
         Vec3::new(-0.76750606, -0.05052291, -0.6390541),
