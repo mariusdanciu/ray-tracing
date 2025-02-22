@@ -1,16 +1,10 @@
-
-
+use glam::{vec3, Vec3};
 use ray_tracing::app::App;
 use ray_tracing::camera::Camera;
-use glam::{vec2, vec3,  Vec3};
 use ray_tracing::objects::{Material, MaterialType, Object3D};
-use ray_tracing::scene::{Scene, Light};
 use ray_tracing::renderer::Renderer;
-use ray_tracing::utils::{
-    cone::Cone, cuboid::Cuboid, cylinder::Cylinder, errors::AppError, image::ImageUtils,
-    plane::Plane, sphere::Sphere, triangle::Triangle,
-};
-
+use ray_tracing::scene::Scene;
+use ray_tracing::utils::{errors::AppError, sphere::Sphere};
 
 pub fn update(s: &mut Scene, ts: f32) -> bool {
     let speed = 0.2;
@@ -27,8 +21,7 @@ pub fn update(s: &mut Scene, ts: f32) -> bool {
 }
 
 pub fn main() -> Result<(), AppError> {
-
-    let scene2 = Scene {
+    let mut scene = Scene {
         max_ray_bounces: 5,
         max_frames_rendering: 10000,
         ambient_color: vec3(0., 0., 0.),
@@ -62,11 +55,11 @@ pub fn main() -> Result<(), AppError> {
         ..Default::default()
     };
 
-    let mut renderer = Renderer::new(scene2);
+    let mut renderer = Renderer::new();
     let mut camera = Camera::new_with_pos(
         Vec3::new(3.8536084, 0.75215954, 4.388293),
         Vec3::new(-0.76750606, -0.05052291, -0.6390541),
     );
     //let mut camera = Camera::new();
-    App::run(&mut camera, &mut renderer)
+    App::run(&mut camera, &mut renderer, &mut scene)
 }

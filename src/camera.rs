@@ -75,7 +75,7 @@ impl Camera {
         }
     }
 
-    pub fn update(&mut self, events: Vec<CameraEvent>, ts: f32) {
+    pub fn update(&mut self, events: &Vec<CameraEvent>, ts: f32) {
         let right_direction = self.forward_direction.cross(self.up);
         let speed = 10.;
         let rotation_speed = 10.;
@@ -86,10 +86,10 @@ impl Camera {
                 CameraEvent::Left => self.position -= right_direction * speed * ts,
                 CameraEvent::Right => self.position += right_direction * speed * ts,
                 CameraEvent::Resize { w, h } => {
-                    self.width = w;
-                    self.height = h;
+                    self.width = *w;
+                    self.height = *h;
                     self.perspective =
-                        Mat4::perspective_rh(self.fov, w as f32 / h as f32, self.near, self.far);
+                        Mat4::perspective_rh(self.fov, *w as f32 / *h as f32, self.near, self.far);
                     self.inverse_perspective = self.perspective.inverse();
                     self.ray_directions = vec![Vec3::ZERO; (self.width * self.height) as usize];
                 }

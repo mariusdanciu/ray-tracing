@@ -1,11 +1,9 @@
-use glam::{vec2, vec3, vec4, Mat4, Vec2, Vec3, Vec3Swizzles, Vec4, Vec4Swizzles};
+use glam::{vec3, Vec3};
 use rand::{rngs::ThreadRng, Rng};
 
-use crate::{
-    objects::{Intersection, Material, Object3D},
-    scene::Light,
-    utils::{self, geometry},
-};
+use crate::light::{Light, LightSource};
+
+use crate::objects::{Intersection, Material, Object3D};
 
 pub static EPSILON: f32 = 0.0001_f32;
 
@@ -65,7 +63,7 @@ impl Ray {
 
         ambience + diffuse + specular
     }
-    
+
     pub fn phong(&self, hit: &RayHit, light: &Light, color: Vec3, material: &Material) -> Vec3 {
         let coeff = hit.normal.dot(-light.direction(hit.point));
         let ambience = material.ambience * color;

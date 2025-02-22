@@ -5,47 +5,7 @@ use rand::rngs::ThreadRng;
 
 use crate::objects::{Material, MaterialType, Object3D, Texture};
 use crate::ray::{Ray, RayHit, EPSILON};
-
-#[derive(Debug, Clone)]
-pub enum Light {
-    Directional { direction: Vec3, intensity: f32 },
-    Positional { position: Vec3, intensity: f32 },
-    Spot { position: Vec3, intensity: f32 },
-}
-
-impl Light {
-    pub fn direction(&self, point: Vec3) -> Vec3 {
-        match *self {
-            Light::Directional { direction, .. } => direction,
-            Light::Positional { position, .. } => (point - position).normalize(),
-            Light::Spot { position, .. } => (point - position).normalize(),
-        }
-    }
-
-    pub fn distance(&self, point: Vec3) -> f32 {
-        match *self {
-            Light::Directional { direction, .. } => 1.,
-            Light::Positional { position, .. } => (point - position).length(),
-            Light::Spot { position, .. } => (point - position).length(),
-        }
-    }
-    pub fn intensity(&self) -> f32 {
-        match *self {
-            Light::Directional {
-                direction,
-                intensity,
-            } => intensity,
-            Light::Positional {
-                position,
-                intensity,
-            } => intensity,
-            Light::Spot {
-                position,
-                intensity,
-            } => intensity,
-        }
-    }
-}
+use crate::light::{Light, LightSource};
 
 #[derive(Clone)]
 pub struct Scene {

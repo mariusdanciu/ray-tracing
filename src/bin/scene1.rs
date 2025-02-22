@@ -1,17 +1,14 @@
-
-
+use glam::{vec2, vec3, Vec3};
 use ray_tracing::app::App;
 use ray_tracing::camera::Camera;
-use glam::{vec2, vec3, Vec3};
+use ray_tracing::light::{Light, Positional};
 use ray_tracing::objects::{Material, MaterialType, Object3D};
-use ray_tracing::scene::{Scene, Light};
 use ray_tracing::renderer::Renderer;
+use ray_tracing::scene::Scene;
 use ray_tracing::utils::{
     cone::Cone, cuboid::Cuboid, cylinder::Cylinder, errors::AppError, image::ImageUtils,
     plane::Plane, sphere::Sphere, triangle::Triangle,
 };
-
-
 
 pub fn update(s: &mut Scene, ts: f32) -> bool {
     let speed = 0.2;
@@ -44,7 +41,7 @@ pub fn main() -> Result<(), AppError> {
         ),
     ];
 
-    let mut scene1 = Scene::new(
+    let mut scene = Scene::new(
         objs,
         vec![
             Material {
@@ -121,24 +118,24 @@ pub fn main() -> Result<(), AppError> {
         ],
     );
 
-    scene1 = scene1
+    scene = scene
         .with_texture(ImageUtils::load_image("./resources/chess.png")?)
         .with_texture(ImageUtils::load_image("./resources/wood.png")?)
         .with_texture(ImageUtils::load_image("./resources/stone3.jpg")?)
         .with_texture(ImageUtils::load_image("./resources/earth_clouds.jpg")?)
-        .with_light(Light::Positional {
+        .with_light(Light::Positional(Positional {
             position: vec3(2., 2., 2.),
             intensity: 5.,
-        })
-        .with_light(Light::Positional {
+        }))
+        .with_light(Light::Positional(Positional {
             position: vec3(3., 2., -2.),
             intensity: 6.,
-        });
+        }));
     //scene1.ambient_color = vec3(0.4, 0.7, 1.);
-    scene1.update_func = Some(update);
-    scene1.diffuse = false;
-    scene1.enable_accumulation = false;
-    scene1.shadow_casting = false;
+    scene.update_func = Some(update);
+    scene.diffuse = false;
+    scene.enable_accumulation = false;
+    scene.shadow_casting = false;
 
     let scene2 = Scene {
         max_ray_bounces: 5,
@@ -174,11 +171,11 @@ pub fn main() -> Result<(), AppError> {
         ..Default::default()
     };
 
-    let mut renderer = Renderer::new(scene1);
+    let mut renderer = Renderer::new();
     let mut camera = Camera::new_with_pos(
         Vec3::new(3.8536084, 0.75215954, 4.388293),
         Vec3::new(-0.76750606, -0.05052291, -0.6390541),
     );
     //let mut camera = Camera::new();
-    App::run(&mut camera, &mut renderer)
+    App::run(&mut camera, &mut renderer, &mut scene)
 }

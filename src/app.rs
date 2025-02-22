@@ -8,12 +8,17 @@ use std::time::Instant;
 use crate::camera::{Camera, CameraEvent};
 
 use crate::renderer::Renderer;
+use crate::scene::{self, Scene};
 use crate::utils::errors::AppError;
 
 pub struct App {}
 
 impl App {
-    pub fn run(camera: &mut Camera, renderer: &mut Renderer) -> Result<(), AppError> {
+    pub fn run(
+        camera: &mut Camera,
+        renderer: &mut Renderer,
+        scene: &mut Scene,
+    ) -> Result<(), AppError> {
         let sdl_context = sdl2::init()?;
 
         let video_subsystem = sdl_context.video()?;
@@ -44,15 +49,14 @@ impl App {
 
         let mut frame_time = Instant::now();
         let mut timer = Instant::now();
-        let mut start_time = Instant::now();
 
-        let nanos = 1000000000. / 60.;
+        let nanos = 1000000000. / 80.;
         let mut delta: f64 = 0.;
         let mut ups = 0u32;
         let mut fps = 0u32;
 
         camera.update(
-            vec![CameraEvent::Resize {
+            &vec![CameraEvent::Resize {
                 w: size.0 as usize,
                 h: size.1 as usize,
             }],
@@ -69,7 +73,7 @@ impl App {
         let mut down = false;
         let mut left = false;
         let mut right = false;
-        let num_cores = num_cpus::get();
+        let num_cores = 30; //num_cpus::get();
 
         'running: loop {
             let elapsed = frame_time.elapsed();
@@ -180,36 +184,38 @@ impl App {
                 }
             }
 
-            let mut events: Vec<CameraEvent> = vec![];
-            if up {
-                events.push(CameraEvent::Up)
-            }
-            if down {
-                events.push(CameraEvent::Down)
-            }
-            if left {
-                events.push(CameraEvent::Left)
-            }
-            if right {
-                events.push(CameraEvent::Right)
-            }
-            if let Some(delta) = rotateXY {
-                events.push(CameraEvent::RotateXY { delta })
-            }
-
-            if !events.is_empty() {
-                camera.update(events, ts);
-                updated = true;
-            }
-
             frame_time = Instant::now();
 
             delta += elapsed_nanos / nanos;
-
             while delta >= 1. {
+                let mut events: Vec<CameraEvent> = vec![];
+                if up {
+                    events.push(CameraEvent::Up)
+                }
+                if down {
+                    events.push(CameraEvent::Down)
+                }
+                if left {
+                    events.push(CameraEvent::Left)
+                }
+                if right {
+                    events.push(CameraEvent::Right)
+                }
+                if let Some(delta) = rotateXY {
+                    events.push(CameraEvent::RotateXY { delta })
+                }
+
+                if !events.is_empty() {
+                    camera.update(&events, ts);
+                    updated = true;
+                }
+
                 // App state updates here.
-                if let Some(f) = renderer.scene.update_func {
-                    updated = f(&mut renderer.scene, ts);
+                if let Some(f) = scene.update_func {
+                    let u = f(scene, ts);
+                    if !updated {
+                        updated = u;
+                    }
                 }
 
                 ups += 1;
@@ -219,7 +225,7 @@ impl App {
             if let Some((w, h)) = changed {
                 updated = true;
                 camera.update(
-                    vec![CameraEvent::Resize {
+                    &vec![CameraEvent::Resize {
                         w: w as usize,
                         h: h as usize,
                     }],
@@ -234,7 +240,15 @@ impl App {
             }
 
             canvas.clear();
-            renderer.render_par(&mut texture, &mut img, &camera, updated, num_cores, ts)?;
+            renderer.render_par(
+                scene,
+                &mut texture,
+                &mut img,
+                &camera,
+                updated,
+                num_cores,
+                ts,
+            )?;
             canvas.copy(&texture, None, None)?;
             canvas.present();
 

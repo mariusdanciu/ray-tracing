@@ -14,21 +14,20 @@ struct Chunk {
 }
 
 pub struct Renderer {
-    pub scene: Scene,
     pub accumulated: Vec<Vec4>,
     pub frame_index: u32,
 }
 
 impl Renderer {
-    pub fn new(scene: Scene) -> Renderer {
+    pub fn new() -> Renderer {
         Renderer {
-            scene: scene,
             accumulated: vec![],
             frame_index: 1,
         }
     }
     fn render_chunk(
         &mut self,
+        scene: &Scene,
         camera: &Camera,
         rnd: &mut ThreadRng,
         chunk: Chunk,
@@ -40,9 +39,9 @@ impl Renderer {
         for pos in 0..chunk.size {
             let ray_dir = camera.ray_directions[pos + chunk.pixel_offset];
 
-            let color = if self.scene.enable_accumulation {
+            let color = if scene.enable_accumulation {
                 //println!("accumulate {}", self.frame_index);
-                self.accumulated[pos] += self.scene.pixel(
+                self.accumulated[pos] += scene.pixel(
                     Ray {
                         origin: camera.position,
                         direction: ray_dir,
@@ -57,7 +56,7 @@ impl Renderer {
 
                 Scene::to_rgba(accumulated)
             } else {
-                let c = self.scene.pixel(
+                let c = scene.pixel(
                     Ray {
                         origin: camera.position,
                         direction: ray_dir,
@@ -80,6 +79,7 @@ impl Renderer {
 
     pub fn render_par(
         &mut self,
+        scene: &Scene,
         texture: &mut Texture,
         img: &mut Vec<u8>,
         camera: &Camera,
@@ -95,8 +95,8 @@ impl Renderer {
             self.frame_index = 1;
         }
 
-        if self.frame_index > self.scene.max_frames_rendering
-            || (self.frame_index > 1 && !self.scene.enable_accumulation && !self.scene.diffuse)
+        if self.frame_index > scene.max_frames_rendering
+            || (self.frame_index > 1 && !scene.enable_accumulation && !scene.diffuse)
         {
             return Ok(());
         }
@@ -119,7 +119,6 @@ impl Renderer {
                 let k = &self.accumulated[offset..(offset + acc_size)];
 
                 let mut s = Renderer {
-                    scene: self.scene.clone(),
                     accumulated: k.to_vec(),
                     frame_index: self.frame_index,
                 };
@@ -129,7 +128,7 @@ impl Renderer {
                     pixel_offset: offset,
                 };
 
-                s.render_chunk(camera, &mut rnd, chunk, e.1, time);
+                s.render_chunk(scene, camera, &mut rnd, chunk, e.1, time);
                 s
             })
             .collect();
