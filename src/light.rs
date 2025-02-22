@@ -12,6 +12,7 @@ pub struct Positional {
 #[derive(Debug, Copy, Clone)]
 pub struct SphericalPositional {
     pub position: Vec3,
+    pub radius: f32,
     pub intensity: f32,
 }
 #[derive(Debug, Copy, Clone)]

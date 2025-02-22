@@ -1,8 +1,8 @@
 use glam::{vec2, vec3, Vec3};
 use ray_tracing::app::App;
 use ray_tracing::camera::Camera;
-use ray_tracing::light::{Directional, Light, LightSource};
-use ray_tracing::objects::{Intersection, Material, MaterialType, Object3D};
+use ray_tracing::light::{SphericalPositional, Light, LightSource};
+use ray_tracing::objects::{Intersection, Material, MaterialType};
 use ray_tracing::renderer::Renderer;
 use ray_tracing::scene::Scene;
 use ray_tracing::utils::{errors::AppError, image::ImageUtils, plane::Plane, sphere::Sphere};
@@ -26,13 +26,13 @@ pub fn main() -> Result<(), AppError> {
         objs,
         vec![
             Material {
-                ambience: 0.4,
-                diffuse: 0.8,
-                shininess: 65.,
-                specular: 2.8,
+                ambience: 1.6,
+                diffuse: 0.2,
+                shininess: 5.,
+                specular: 0.8,
                 albedo: Vec3::new(0.4, 0.4, 0.4),
                 kind: MaterialType::Reflective { roughness: 1. },
-                texture: Some(0),
+                //texture: Some(0),
                 ..Default::default()
             },
             Material {
@@ -47,19 +47,15 @@ pub fn main() -> Result<(), AppError> {
         ],
     );
 
-    let l: &dyn LightSource = &Directional {
-        direction: vec3(-1., -2., -5.).normalize(),
-        intensity: 1.,
-    };
-
     scene = scene
         .with_texture(ImageUtils::load_image("./resources/chess.png")?)
         .with_texture(ImageUtils::load_image("./resources/wood.png")?)
         .with_texture(ImageUtils::load_image("./resources/stone3.jpg")?)
         .with_texture(ImageUtils::load_image("./resources/earth_clouds.jpg")?)
-        .with_light(Light::Directional(Directional {
-            direction: vec3(-1., -2., -5.).normalize(),
-            intensity: 1.,
+        .with_light(Light::SphericalPositional(SphericalPositional {
+            position: vec3(1., 2., 2.),
+            intensity: 4.,
+            radius: 1.,
         }));
     //scene1.ambient_color = vec3(0.4, 0.7, 1.);
     scene.update_func = Some(update);
