@@ -29,7 +29,7 @@ pub fn main() -> Result<(), AppError> {
         enable_accumulation: true,
         objects: vec![
             Sphere::new(Vec3::new(0., -100.5, 0.), 100., 0),
-            Sphere::new(Vec3::new(10., 15., -34.), 20.0, 1),
+            Sphere::new(Vec3::new(10., 15., -40.), 20.0, 1),
             Sphere::new(Vec3::new(0., 0.5, -0.5), 1., 2),
         ],
         materials: vec![
@@ -42,13 +42,13 @@ pub fn main() -> Result<(), AppError> {
             Material {
                 albedo: Vec3::new(0.9, 0.5, 0.2),
                 kind: MaterialType::Reflective { roughness: 1.0 },
-                emission_power: 8.0,
+                emission_power: 14.0,
                 ..Default::default()
             },
             Material {
-                albedo: Vec3::new(0.9, 0.9, 0.2),
+                albedo: Vec3::new(0.0, 0.3, 0.7),
                 kind: MaterialType::Reflective { roughness: 1.0 },
-                emission_power: 0.,
+                emission_power: 0.8,
                 ..Default::default()
             },
         ],
