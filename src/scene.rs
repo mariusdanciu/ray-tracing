@@ -5,7 +5,7 @@ use rand::rngs::ThreadRng;
 
 use crate::objects::{Material, MaterialType, Object3D, Texture};
 use crate::ray::{Ray, RayHit, EPSILON};
-use crate::light::{Light, LightSource};
+use crate::light::{self, Light, LightSource};
 
 #[derive(Clone)]
 pub struct Scene {
@@ -198,6 +198,8 @@ impl Scene {
             let light_dis = l.distance(hit.point);
             l_acc += (k / (light_dis * light_dis)) * l.albedo() * l.intensity();
 
+        }
+        for l in &self.lights {
             if self.shadow_casting {
                 if let Some((hit, idx)) = self.trace_ray(Ray {
                     origin: hit.point + EPSILON * hit.normal,

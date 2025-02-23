@@ -39,7 +39,7 @@ pub fn main() -> Result<(), AppError> {
                 ambience: 0.4,
                 diffuse: 0.7,
                 shininess: 60.,
-                specular: 0.5,
+                specular: 1.5,
                 albedo: Vec3::new(0.1, 0.5, 0.9),
                 kind: MaterialType::Reflective { roughness: 0.4 },
                 ..Default::default()
@@ -55,6 +55,12 @@ pub fn main() -> Result<(), AppError> {
         .with_light(Light::SphericalPositional(SphericalPositional {
             albedo: vec3(1., 0.5, 1.),
             position: vec3(1., 3., 2.),
+            intensity: 8.,
+            radius: 1.,
+        }))
+        .with_light(Light::SphericalPositional(SphericalPositional {
+            albedo: vec3(0., 0.7, 1.),
+            position: vec3(-2., 3., -2.),
             intensity: 8.,
             radius: 1.,
         }));
