@@ -196,7 +196,7 @@ impl Scene {
         for l in &self.lights {
             let k = ray.blinn_phong(&hit, l, albedo, material);
             let light_dis = l.distance(hit.point);
-            l_acc += (k / (light_dis * light_dis)) * l.intensity();
+            l_acc += (k / (light_dis * light_dis)) * l.albedo() * l.intensity();
 
             if self.shadow_casting {
                 if let Some((hit, idx)) = self.trace_ray(Ray {

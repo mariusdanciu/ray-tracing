@@ -1,22 +1,26 @@
 use glam::Vec3;
 #[derive(Debug, Copy, Clone)]
 pub struct Directional {
+    pub albedo: Vec3,
     pub direction: Vec3,
     pub intensity: f32,
 }
 #[derive(Debug, Copy, Clone)]
 pub struct Positional {
+    pub albedo: Vec3,
     pub position: Vec3,
     pub intensity: f32,
 }
 #[derive(Debug, Copy, Clone)]
 pub struct SphericalPositional {
+    pub albedo: Vec3,
     pub position: Vec3,
     pub radius: f32,
     pub intensity: f32,
 }
 #[derive(Debug, Copy, Clone)]
 pub struct Spot {
+    pub albedo: Vec3,
     pub position: Vec3,
     pub intensity: f32,
 }
@@ -29,6 +33,7 @@ pub enum Light {
 }
 
 pub trait LightSource {
+    fn albedo(&self) -> Vec3;
     fn direction(&self, point: Vec3) -> Vec3;
     fn distance(&self, point: Vec3) -> f32;
     fn intensity(&self) -> f32;
@@ -46,6 +51,10 @@ impl LightSource for Directional {
     fn intensity(&self) -> f32 {
         self.intensity
     }
+    
+    fn albedo(&self) -> Vec3 {
+        self.albedo
+    }
 }
 
 impl LightSource for SphericalPositional {
@@ -60,6 +69,9 @@ impl LightSource for SphericalPositional {
     fn intensity(&self) -> f32 {
         self.intensity
     }
+    fn albedo(&self) -> Vec3 {
+        self.albedo
+    }
 }
 
 impl LightSource for Positional {
@@ -73,6 +85,9 @@ impl LightSource for Positional {
 
     fn intensity(&self) -> f32 {
         self.intensity
+    }
+    fn albedo(&self) -> Vec3 {
+        self.albedo
     }
 }
 
@@ -98,6 +113,13 @@ impl LightSource for Light {
             Light::Directional(l) => l.intensity(),
             Light::Positional(l) => l.intensity(),
             Light::SphericalPositional(l) => l.intensity(),
+        }
+    }
+    fn albedo(&self) -> Vec3 {
+        match *self {
+            Light::Directional(l) => l.albedo(),
+            Light::Positional(l) => l.albedo(),
+            Light::SphericalPositional(l) => l.albedo(),
         }
     }
 }

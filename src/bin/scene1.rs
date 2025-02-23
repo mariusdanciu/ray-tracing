@@ -124,10 +124,12 @@ pub fn main() -> Result<(), AppError> {
         .with_texture(ImageUtils::load_image("./resources/stone3.jpg")?)
         .with_texture(ImageUtils::load_image("./resources/earth_clouds.jpg")?)
         .with_light(Light::Positional(Positional {
+            albedo: vec3(1., 1., 1.),
             position: vec3(2., 2., 2.),
-            intensity: 5.,
+            intensity: 6.,
         }))
         .with_light(Light::Positional(Positional {
+            albedo: vec3(1., 1., 1.),
             position: vec3(3., 2., -2.),
             intensity: 6.,
         }));
