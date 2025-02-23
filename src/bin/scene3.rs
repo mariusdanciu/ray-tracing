@@ -53,9 +53,9 @@ pub fn main() -> Result<(), AppError> {
         .with_texture(ImageUtils::load_image("./resources/stone3.jpg")?)
         .with_texture(ImageUtils::load_image("./resources/earth_clouds.jpg")?)
         .with_light(Light::SphericalPositional(SphericalPositional {
-            albedo: vec3(1., 1., 1.),
-            position: vec3(1., 2., 2.),
-            intensity: 4.,
+            albedo: vec3(1., 0.5, 1.),
+            position: vec3(1., 3., 2.),
+            intensity: 8.,
             radius: 1.,
         }));
     //scene1.ambient_color = vec3(0.4, 0.7, 1.);
