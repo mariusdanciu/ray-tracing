@@ -22,7 +22,7 @@ pub struct Camera {
 impl Default for Camera {
     fn default() -> Self {
         let pos = Vec3::new(0.0, 0.0, 3.);
-        let look_at = Vec3::new(0.0, 0.0, -1.);
+        let look_at = Vec3::new(0.0, 0.0, -1.).normalize();
 
         let up = Vec3::new(0., 1., 0.);
         let fov: f32 = 45.0;
@@ -70,7 +70,7 @@ impl Camera {
     pub fn new_with_pos(position: Vec3, look_at: Vec3) -> Camera {
         Camera {
             position,
-            forward_direction: look_at,
+            forward_direction: look_at.normalize(),
             ..Default::default()
         }
     }

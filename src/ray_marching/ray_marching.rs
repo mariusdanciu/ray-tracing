@@ -1,4 +1,4 @@
-use glam::{vec2, vec3, Vec3};
+use glam::{vec2, vec3, Vec2, Vec3};
 use rand::rngs::ThreadRng;
 
 use crate::light::LightSource;
@@ -15,6 +15,11 @@ pub struct RayMarching<'a> {
 }
 
 impl<'a> RayMarching<'a> {
+    pub fn smooth_step(&self, edge0: f32, edge1: f32, x: f32) -> f32 {
+        let t = ((x - edge0) / (edge1 - edge0)).clamp(0.0, 1.0);
+        return t * t * (3.0 - 2.0 * t);
+    }
+
     pub fn mix(x: f32, y: f32, a: f32) -> f32 {
         x * (1. - a) + y * a
     }
@@ -23,12 +28,30 @@ impl<'a> RayMarching<'a> {
         return RayMarching::mix(d2, d1, h) - k * h * (1. - h);
     }
 
+    fn sdf_rounded_cylinder(
+        &self,
+        p: Vec3,
+        radius: f32,
+        half_height: f32,
+        corner_radius: f32,
+    ) -> f32 {
+        let d =
+            vec2(vec2(p.x, p.z).length(), (p.y).abs()) - vec2(radius, half_height) + corner_radius;
+        return (d.max(Vec2::ZERO)).length() + d.x.max(d.y).min(0.0) - corner_radius;
+    }
+
+    fn sdf_box(&self, p: Vec3, b: Vec3) -> f32 {
+        let q = p.abs() - b;
+        return q.max(Vec3::ZERO).length() + q.x.max(q.y.max(q.z)).min(0.0);
+    }
+
     pub fn sdfs(&self, p: Vec3) -> (f32, i32) {
         let mut min_dist = f32::MAX;
-        let mut obj_idx = -1;
+        let mut obj_idx = 0;
 
         let mut sphere_dist = f32::MAX;
         let mut plane_dist = f32::MAX;
+
         for (idx, obj) in self.scene.objects.iter().enumerate() {
             match obj {
                 Object3D::Sphere(s) => {
@@ -52,9 +75,12 @@ impl<'a> RayMarching<'a> {
         }
 
         //let o = sphere_dist.min(plane_dist);
-        let o = RayMarching::smooth_union(sphere_dist, plane_dist, 0.7);
 
-        (o, obj_idx)
+        let o = RayMarching::smooth_union(sphere_dist, plane_dist, 0.7);
+        let cil = self.sdf_rounded_cylinder(p - vec3(-1., 0.5, -2.), 1., 0.2, 0.1);
+
+        let o1 = RayMarching::smooth_union(o, cil, 0.3);
+        (o1, 1)
     }
 
     fn normal(&self, p: Vec3) -> Vec3 {
@@ -71,6 +97,19 @@ impl<'a> RayMarching<'a> {
             + yxy * self.sdfs(p + yxy * k).0
             + xxx * self.sdfs(p + xxx * k).0)
             .normalize()
+    }
+
+    fn occlusion(&self, pos: Vec3, nor: Vec3) -> f32 {
+        let mut occ = 0.0f32;
+        let mut sca = 1.0f32;
+        for i in 0..3 {
+            let hr = 0.02 + 0.025 * (i * i) as f32;
+            let aopos = nor * hr + pos;
+            let dd = self.sdfs(aopos);
+            occ += -(dd.0 - hr) * sca;
+            sca *= 0.95;
+        }
+        return 1.0 - occ.clamp(0.0, 1.0);
     }
 
     pub fn light(&self, ray: &Ray, hit: &RayHit) -> Vec3 {
@@ -148,7 +187,11 @@ impl<'a> RayMarching<'a> {
             };
 
             let mut color = self.light(&ray, &rayhit);
+            let occ = self.occlusion(hit, n);
 
+            color *= occ;
+            //color *= ( -0.05*t ).exp();
+            color *= 1.0 - self.smooth_step(5.0, 20.0, t);
             return color;
         }
 

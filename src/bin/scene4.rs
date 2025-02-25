@@ -13,7 +13,7 @@ pub fn update(s: &mut Scene, ts: f32) -> bool {
         Object3D::Sphere { .. } => true,
         _ => false,
     }) {
-        c.position.y = -ts.sin() * speed + 0.4;
+        c.position.y = -(ts).sin() * speed + 0.8;
         //c.update();
     };
     true
@@ -54,21 +54,21 @@ pub fn main() -> Result<(), AppError> {
         .with_texture(ImageUtils::load_image("./resources/wood.png")?)
         .with_texture(ImageUtils::load_image("./resources/stone3.jpg")?)
         .with_texture(ImageUtils::load_image("./resources/earth_clouds.jpg")?)
-        .with_light(Light::Positional(Positional {
-            albedo: vec3(1., 0.8, 0.6),
-            position: vec3(1., 3., 2.),
-            intensity: 20.,
-        }))
+        // .with_light(Light::Positional(Positional {
+        //     albedo: vec3(1., 0.8, 0.6),
+        //     position: vec3(1., 3., 2.),
+        //     intensity: 20.,
+        // }))
         // .with_light(Light::Positional(Positional {
         //     albedo: vec3(1., 0.4, 0.8),
         //     position: vec3(-2., 3., -2.),
         //     intensity: 8.,
         // }))
-        // .with_light(Light::Directional(Directional {
-        //     albedo: vec3(1., 1., 1.),
-        //     direction: vec3(-1., -1., -2.).normalize(),
-        //     intensity: 2.,
-        // }))
+        .with_light(Light::Directional(Directional {
+            albedo: vec3(1., 1., 1.),
+            direction: vec3(-1., -1., -2.).normalize(),
+            intensity: 2.,
+        }))
         ;
     //scene1.ambient_color = vec3(0.4, 0.7, 1.);
     scene.update_func = Some(update);
