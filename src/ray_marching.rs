@@ -6,8 +6,8 @@ use crate::objects::{Material, Object3D};
 use crate::ray::{Ray, RayHit, EPSILON};
 use crate::scene::Scene;
 
-static MAX_STEPS: usize = 300;
-static MAX_DISTANCE: f32 = 100.;
+static MAX_STEPS: usize = 255;
+static MAX_DISTANCE: f32 = 40.;
 static HIT_PRECISION: f32 = 0.001;
 
 pub struct RayMarching<'a> {
@@ -51,14 +51,14 @@ impl<'a> RayMarching<'a> {
             }
         }
 
-        //let m = sphere_dist.min(plane_dist);
-        let o = RayMarching::smooth_union(sphere_dist, plane_dist, 0.5);
+        //let o = sphere_dist.min(plane_dist);
+        let o = RayMarching::smooth_union(sphere_dist, plane_dist, 0.7);
 
         (o, obj_idx)
     }
 
     fn normal(&self, p: Vec3) -> Vec3 {
-        let k = 0.0001;
+        let k = 0.5773*0.0005;
         let e = vec2(1., -1.);
 
         let xyy = vec3(e.x, e.y, e.y);
@@ -115,7 +115,7 @@ impl<'a> RayMarching<'a> {
         let mut hit = false;
         while i < MAX_STEPS {
             if t > MAX_DISTANCE {
-                break;
+                return (false, MAX_DISTANCE, 0)
             }
             (h, obj_idx) = self.sdfs(ray.origin + ray.direction * t);
 

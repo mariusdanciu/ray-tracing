@@ -21,7 +21,7 @@ pub fn update(s: &mut Scene, ts: f32) -> bool {
 pub fn main() -> Result<(), AppError> {
     let objs = vec![
         Plane::new(vec3(0., 1., 0.), vec3(0., 0., 0.), Some(vec2(5., 5.)), 1),
-        Sphere::new(Vec3::new(0., -1., 0.), 1., 1),
+        Sphere::new(Vec3::new(0., -1., -2.), 1., 1),
     ];
 
     let mut scene = Scene::new(
@@ -55,17 +55,17 @@ pub fn main() -> Result<(), AppError> {
         .with_texture(ImageUtils::load_image("./resources/stone3.jpg")?)
         .with_texture(ImageUtils::load_image("./resources/earth_clouds.jpg")?)
         .with_light(Light::SphericalPositional(SphericalPositional {
-            albedo: vec3(1., 0.4, 1.),
+            albedo: vec3(1., 0.8, 0.6),
             position: vec3(1., 3., 2.),
             intensity: 8.,
             radius: 1.,
         }))
-        .with_light(Light::SphericalPositional(SphericalPositional {
-            albedo: vec3(0., 0.5, 1.),
-            position: vec3(-2., 3., -2.),
-            intensity: 8.,
-            radius: 1.,
-        }))
+        // .with_light(Light::SphericalPositional(SphericalPositional {
+        //     albedo: vec3(1., 0.4, 0.8),
+        //     position: vec3(-2., 3., -2.),
+        //     intensity: 8.,
+        //     radius: 1.,
+        // }))
         // .with_light(Light::Directional(Directional {
         //     albedo: vec3(1., 1., 1.),
         //     direction: vec3(-1., -1., -2.).normalize(),
@@ -80,6 +80,6 @@ pub fn main() -> Result<(), AppError> {
     scene.shadow_casting = true;
 
     let mut renderer = Renderer::new();
-    let mut camera = Camera::new_with_pos(Vec3::new(0., 2., 4.0), Vec3::new(0., -0.5, -2.));
+    let mut camera = Camera::new_with_pos(Vec3::new(0., 2., 4.0), Vec3::new(0., 0., -1.));
     App::run(&mut camera, &mut renderer, &mut scene)
 }
