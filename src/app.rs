@@ -49,6 +49,7 @@ impl App {
 
         let mut frame_time = Instant::now();
         let mut timer = Instant::now();
+        let start = Instant::now();
 
         let nanos = 1000000000. / 80.;
         let mut delta: f64 = 0.;
@@ -212,7 +213,7 @@ impl App {
 
                 // App state updates here.
                 if let Some(f) = scene.update_func {
-                    let u = f(scene, ts);
+                    let u = f(scene, start.elapsed().as_secs_f32());
                     if !updated {
                         updated = u;
                     }

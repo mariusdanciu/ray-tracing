@@ -77,8 +77,8 @@ impl Camera {
 
     pub fn update(&mut self, events: &Vec<CameraEvent>, ts: f32) {
         let right_direction = self.forward_direction.cross(self.up);
-        let speed = 10.;
-        let rotation_speed = 10.;
+        let speed = 5.;
+        let rotation_speed = 5.;
         for event in events {
             match event {
                 CameraEvent::Up => self.position += self.forward_direction * speed * ts,

@@ -6,3 +6,5 @@ pub mod renderer;
 pub mod scene;
 pub mod light;
 pub mod utils;
+pub mod ray_tracing;
+pub mod ray_marching;

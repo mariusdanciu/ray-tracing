@@ -1,10 +1,13 @@
-use std::{sync::Arc, time::Instant};
 
 use glam::Vec4;
 use rand::rngs::ThreadRng;
-use sdl2::{render::Texture, timer::Timer};
+use sdl2::render::Texture;
 
-use crate::{camera::Camera, ray::Ray, scene::Scene};
+use crate::{
+    camera::Camera,
+    ray::Ray,
+    scene::Scene,
+};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
 #[derive(Debug, Copy, Clone)]
@@ -32,7 +35,6 @@ impl Renderer {
         rnd: &mut ThreadRng,
         chunk: Chunk,
         bytes: &mut [u8],
-        time: f32,
     ) {
         let mut i = 0;
 
@@ -47,7 +49,6 @@ impl Renderer {
                         direction: ray_dir,
                     },
                     rnd,
-                    time,
                 );
 
                 let mut accumulated = self.accumulated[pos];
@@ -62,7 +63,6 @@ impl Renderer {
                         direction: ray_dir,
                     },
                     rnd,
-                    time,
                 );
                 self.accumulated[pos] = c.clamp(Vec4::ZERO, Vec4::ONE);
                 Scene::to_rgba(self.accumulated[pos])
@@ -128,7 +128,7 @@ impl Renderer {
                     pixel_offset: offset,
                 };
 
-                s.render_chunk(scene, camera, &mut rnd, chunk, e.1, time);
+                s.render_chunk(scene, camera, &mut rnd, chunk, e.1);
                 s
             })
             .collect();

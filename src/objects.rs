@@ -20,6 +20,31 @@ pub enum Object3D {
     Cone(Cone),
 }
 
+impl Object3D {
+    pub fn material_index(&self) -> usize {
+        match self {
+            Object3D::Sphere(o) => {
+                o.material_index
+            },
+            Object3D::Triangle(o)=> {
+                o.material_index
+            },
+            Object3D::Cuboid(o)=> {
+                o.material_index
+            },
+            Object3D::Plane(o)=> {
+                o.material_index
+            },
+            Object3D::Cylinder(o)=> {
+                o.material_index
+            },
+            Object3D::Cone(o)=> {
+                o.material_index
+            },
+        }
+    }
+}
+
 #[derive(Debug, Copy, Clone)]
 pub enum MaterialType {
     Reflective {

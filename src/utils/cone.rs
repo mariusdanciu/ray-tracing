@@ -15,7 +15,7 @@ pub struct Cone {
     pub radius: f32,
     pub height: f32,
     pub rotation_axis: Vec3,
-    material_index: usize,
+    pub material_index: usize,
     transform: Mat4,
     inv_transform: Mat4,
 }

@@ -41,7 +41,7 @@ impl Ray {
         self.reflect_vec(self.direction, normal)
     }
 
-    fn reflect_vec(&self, vec: Vec3, normal: Vec3) -> Vec3 {
+    pub fn reflect_vec(&self, vec: Vec3, normal: Vec3) -> Vec3 {
         vec - (2. * (vec.dot(normal))) * normal
     }
 
@@ -53,7 +53,7 @@ impl Ray {
         material: &Material,
     ) -> Vec3 {
         let coeff = hit.normal.dot(-light.direction(hit.point));
-        let ambience = material.ambience * color;
+        let ambience = material.ambience * color ;
         let diffuse = material.diffuse * coeff.max(0.) * color;
         let half_angle = (-self.direction - light.direction(hit.point)).normalize();
         let shininess = (hit.normal.dot(half_angle))
