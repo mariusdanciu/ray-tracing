@@ -1,7 +1,7 @@
 use glam::{vec2, vec3, Vec3};
 use ray_tracing::app::App;
 use ray_tracing::camera::Camera;
-use ray_tracing::light::{Directional, Light, LightSource, SphericalPositional};
+use ray_tracing::light::{Directional, Light, LightSource, Positional};
 use ray_tracing::objects::{Intersection, Material, MaterialType, Object3D};
 use ray_tracing::renderer::Renderer;
 use ray_tracing::scene::Scene;
@@ -38,7 +38,7 @@ pub fn main() -> Result<(), AppError> {
                 ..Default::default()
             },
             Material {
-                ambience: 0.3,
+                ambience: 0.4,
                 diffuse: 0.4,
                 shininess: 64.,
                 specular: 0.5,
@@ -54,17 +54,15 @@ pub fn main() -> Result<(), AppError> {
         .with_texture(ImageUtils::load_image("./resources/wood.png")?)
         .with_texture(ImageUtils::load_image("./resources/stone3.jpg")?)
         .with_texture(ImageUtils::load_image("./resources/earth_clouds.jpg")?)
-        .with_light(Light::SphericalPositional(SphericalPositional {
+        .with_light(Light::Positional(Positional {
             albedo: vec3(1., 0.8, 0.6),
             position: vec3(1., 3., 2.),
-            intensity: 8.,
-            radius: 1.,
+            intensity: 20.,
         }))
-        // .with_light(Light::SphericalPositional(SphericalPositional {
+        // .with_light(Light::Positional(Positional {
         //     albedo: vec3(1., 0.4, 0.8),
         //     position: vec3(-2., 3., -2.),
         //     intensity: 8.,
-        //     radius: 1.,
         // }))
         // .with_light(Light::Directional(Directional {
         //     albedo: vec3(1., 1., 1.),

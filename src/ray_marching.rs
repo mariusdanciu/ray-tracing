@@ -58,7 +58,7 @@ impl<'a> RayMarching<'a> {
     }
 
     fn normal(&self, p: Vec3) -> Vec3 {
-        let k = 0.5773*0.0005;
+        let k = 0.5773 * 0.0005;
         let e = vec2(1., -1.);
 
         let xyy = vec3(e.x, e.y, e.y);
@@ -107,15 +107,15 @@ impl<'a> RayMarching<'a> {
     }
 
     pub fn march_ray(&self, ray: Ray) -> (bool, f32, i32) {
-        let mut h = 1.;
-        let mut t = 1.;
+        let mut h = 0.0;
+        let mut t = 0.0;
         let mut obj_idx = -1i32;
         // March the ray
         let mut i = 0;
         let mut hit = false;
         while i < MAX_STEPS {
             if t > MAX_DISTANCE {
-                return (false, MAX_DISTANCE, 0)
+                break;
             }
             (h, obj_idx) = self.sdfs(ray.origin + ray.direction * t);
 
