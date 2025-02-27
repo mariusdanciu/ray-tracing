@@ -5,6 +5,7 @@ use glam::{vec3, vec4, Mat4, Vec3, Vec4Swizzles};
 use crate::{
     objects::{Intersection, Object3D},
     ray::{Ray, RayHit},
+    scene::Scene,
 };
 
 use super::geometry;
@@ -16,6 +17,7 @@ pub struct Sphere {
     pub rotation_axis: Vec3,
     pub radius: f32,
     pub material_index: usize,
+    pub part_of_composite: bool,
     transform: Mat4,
     inv_transform: Mat4,
 }
@@ -52,6 +54,7 @@ impl Sphere {
             material_index,
             transform: t,
             inv_transform: t.inverse(),
+            part_of_composite: false,
         })
     }
 
@@ -64,6 +67,13 @@ impl Sphere {
         self.transform = t;
         self.inv_transform = t.inverse();
         *self
+    }
+
+    pub fn sdf(&self, scene: &Scene, p: Vec3, object: &Object3D) -> (f32, Vec3) {
+        let m = object.material_index();
+        let c = scene.materials[m].albedo;
+
+        ((p - self.position).length() - self.radius, c)
     }
 }
 
@@ -118,4 +128,6 @@ impl Intersection for Sphere {
             v: u * INV_PI,
         })
     }
+
+
 }

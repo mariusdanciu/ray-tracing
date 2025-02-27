@@ -4,7 +4,7 @@ use glam::{Vec3, Vec4Swizzles};
 
 use crate::{
     objects::{Intersection, Object3D},
-    ray::{Ray, RayHit},
+    ray::{Ray, RayHit}, scene::Scene,
 };
 
 #[derive(Debug, Clone, Copy)]
@@ -23,6 +23,10 @@ impl Triangle {
             v3,
             material_index,
         })
+    }
+
+    pub fn sdf(&self, scene: &Scene, p: Vec3, object: &Object3D) ->(f32, Vec3) {
+        (f32::MAX, Vec3::ZERO)
     }
 }
 
@@ -133,4 +137,5 @@ impl Intersection for Triangle {
         //     return None;
         // }
     }
+
 }

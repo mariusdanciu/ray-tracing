@@ -2,7 +2,7 @@ use glam::{vec3, vec4, Mat4, Vec3, Vec3Swizzles, Vec4Swizzles};
 
 use crate::{
     objects::{Intersection, Object3D},
-    ray::{Ray, RayHit},
+    ray::{Ray, RayHit}, scene::Scene,
 };
 
 use super::geometry;
@@ -25,17 +25,19 @@ impl Cuboid {
         dimension: Vec3,
         material_index: usize,
     ) -> Object3D {
-
-        Object3D::Cuboid(Cuboid {
-            position,
-            dimension,
-            rotation_axis,
-            material_index,
-            ..Default::default()
-        }.update())
+        Object3D::Cuboid(
+            Cuboid {
+                position,
+                dimension,
+                rotation_axis,
+                material_index,
+                ..Default::default()
+            }
+            .update(),
+        )
     }
 
-    pub fn update(&mut self) -> Self{
+    pub fn update(&mut self) -> Self {
         let t = Mat4::from_translation(self.position)
             * Mat4::from_rotation_x(self.rotation_axis.x * geometry::DEGREES)
             * Mat4::from_rotation_y(self.rotation_axis.y * geometry::DEGREES)
@@ -45,6 +47,14 @@ impl Cuboid {
         self.b_min = (Mat4::from_scale(self.dimension) * vec4(-1., -1., -1., 0.)).xyz();
         self.b_max = (Mat4::from_scale(self.dimension) * vec4(1., 1., 1., 0.)).xyz();
         *self
+    }
+
+    pub fn sdf(&self, scene: &Scene, p: Vec3, object: &Object3D) -> (f32, Vec3) {
+        let corner_radius = 0.1;
+        let q = p.abs() - self.dimension + corner_radius;
+        let m = object.material_index();
+        let c = scene.materials[m].albedo;
+        (q.max(Vec3::ZERO).length() + q.x.max(q.y.max(q.z)).min(0.0) - corner_radius, c)
     }
 }
 impl Intersection for Cuboid {
@@ -92,4 +102,6 @@ impl Intersection for Cuboid {
             v: u_v.y,
         })
     }
+
+
 }

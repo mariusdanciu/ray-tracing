@@ -1,10 +1,13 @@
+
 use glam::{vec2, vec3, Vec3};
-use ray_tracing::app::App;
+use ray_tracing::app::App3D;
 use ray_tracing::camera::Camera;
-use ray_tracing::light::{Directional, Light, LightSource, Positional};
-use ray_tracing::objects::{Intersection, Material, MaterialType, Object3D};
+use ray_tracing::light::{Directional, Light};
+use ray_tracing::objects::{Material, MaterialType, Object3D};
 use ray_tracing::renderer::Renderer;
 use ray_tracing::scene::Scene;
+use ray_tracing::utils::cylinder::Cylinder;
+use ray_tracing::utils::union::Union;
 use ray_tracing::utils::{errors::AppError, image::ImageUtils, plane::Plane, sphere::Sphere};
 
 pub fn update(s: &mut Scene, ts: f32) -> bool {
@@ -13,15 +16,19 @@ pub fn update(s: &mut Scene, ts: f32) -> bool {
         Object3D::Sphere { .. } => true,
         _ => false,
     }) {
-        c.position.y = -(ts).sin() * speed + 0.8;
+        c.position.y = (ts).sin() * speed + 0.8;
         //c.update();
     };
     true
 }
+
+
 pub fn main() -> Result<(), AppError> {
     let objs = vec![
-        Plane::new(vec3(0., 1., 0.), vec3(0., 0., 0.), Some(vec2(5., 5.)), 1),
+        Union::new(1, 2),
+        Plane::new(vec3(0., 1., 0.), vec3(0., 0., 0.), Some(vec2(5., 5.)), 0),
         Sphere::new(Vec3::new(0., -1., -2.), 1., 1),
+        Cylinder::new(vec3(-1., 0.5, 0.2), 0.5, vec3(0., 0., 0.), 1.5, 2),
     ];
 
     let mut scene = Scene::new(
@@ -38,7 +45,7 @@ pub fn main() -> Result<(), AppError> {
                 ..Default::default()
             },
             Material {
-                ambience: 0.4,
+                ambience: 0.3,
                 diffuse: 0.4,
                 shininess: 64.,
                 specular: 0.5,
@@ -46,8 +53,19 @@ pub fn main() -> Result<(), AppError> {
                 kind: MaterialType::Reflective { roughness: 1. },
                 ..Default::default()
             },
-        ],
+            Material {
+                ambience: 0.4,
+                diffuse: 0.4,
+                shininess: 64.,
+                specular: 0.5,
+                albedo: Vec3::new(0.0, 0.4, 1.),
+                kind: MaterialType::Reflective { roughness: 1. },
+                ..Default::default()
+            },
+        ]
     );
+
+    scene.sdfs = vec!(0, 3);
 
     scene = scene
         .with_texture(ImageUtils::load_image("./resources/chess.png")?)
@@ -74,10 +92,10 @@ pub fn main() -> Result<(), AppError> {
     scene.update_func = Some(update);
     scene.diffuse = false;
     scene.ray_marching = true;
-    scene.enable_accumulation = false;
     scene.shadow_casting = true;
 
     let mut renderer = Renderer::new();
     let mut camera = Camera::new_with_pos(Vec3::new(0., 2., 4.0), Vec3::new(0., 0., -1.));
-    App::run(&mut camera, &mut renderer, &mut scene)
+    
+    App3D::run(&mut camera, &mut scene, &mut renderer)
 }

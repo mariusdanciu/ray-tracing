@@ -1,16 +1,13 @@
 
+
 use glam::Vec4;
 use rand::rngs::ThreadRng;
 use sdl2::render::Texture;
 
-use crate::{
-    camera::Camera,
-    ray::Ray,
-    scene::Scene,
-};
+use crate::{camera::Camera, ray::Ray, scene::Scene};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
-#[derive(Debug, Copy, Clone)]
+
 struct Chunk {
     size: usize,
     pixel_offset: usize,
@@ -18,16 +15,29 @@ struct Chunk {
 
 pub struct Renderer {
     pub accumulated: Vec<Vec4>,
-    pub frame_index: u32,
+    pub enable_accumulation: bool,
+    pub max_frames_rendering: u32,
+    pub frame_index: u32
 }
 
 impl Renderer {
     pub fn new() -> Renderer {
         Renderer {
             accumulated: vec![],
-            frame_index: 1,
+            enable_accumulation: false,
+            max_frames_rendering: 1000,
+            frame_index: 1
         }
     }
+    pub fn to_rgba(c: Vec4) -> (u8, u8, u8, u8) {
+        (
+            (c.x * 255.) as u8,
+            (c.y * 255.) as u8,
+            (c.z * 255.) as u8,
+            (c.w + 255.) as u8,
+        )
+    }
+
     fn render_chunk(
         &mut self,
         scene: &Scene,
@@ -41,31 +51,25 @@ impl Renderer {
         for pos in 0..chunk.size {
             let ray_dir = camera.ray_directions[pos + chunk.pixel_offset];
 
-            let color = if scene.enable_accumulation {
-                //println!("accumulate {}", self.frame_index);
-                self.accumulated[pos] += scene.pixel(
-                    Ray {
-                        origin: camera.position,
-                        direction: ray_dir,
-                    },
-                    rnd,
-                );
+            let p = scene.pixel(
+                Ray {
+                    origin: camera.position,
+                    direction: ray_dir,
+                },
+                rnd,
+            );
+
+            let color = if self.enable_accumulation {
+                self.accumulated[pos] += p;
 
                 let mut accumulated = self.accumulated[pos];
                 accumulated /= self.frame_index as f32;
                 accumulated = accumulated.clamp(Vec4::ZERO, Vec4::ONE);
 
-                Scene::to_rgba(accumulated)
+                Self::to_rgba(accumulated)
             } else {
-                let c = scene.pixel(
-                    Ray {
-                        origin: camera.position,
-                        direction: ray_dir,
-                    },
-                    rnd,
-                );
-                self.accumulated[pos] = c.clamp(Vec4::ZERO, Vec4::ONE);
-                Scene::to_rgba(self.accumulated[pos])
+                self.accumulated[pos] = p.clamp(Vec4::ZERO, Vec4::ONE);
+                Self::to_rgba(self.accumulated[pos])
             };
 
             bytes[i] = color.0;
@@ -77,15 +81,15 @@ impl Renderer {
         }
     }
 
-    pub fn render_par(
+
+    pub fn render(
         &mut self,
-        scene: &Scene,
+        scene: &mut Scene,
         texture: &mut Texture,
         img: &mut Vec<u8>,
         camera: &Camera,
         updated: bool,
         num_chunks: usize,
-        time: f32,
     ) -> Result<(), String> {
         let w = camera.width;
         let h = camera.height;
@@ -95,8 +99,9 @@ impl Renderer {
             self.frame_index = 1;
         }
 
-        if self.frame_index > scene.max_frames_rendering
-            || (self.frame_index > 1 && !scene.enable_accumulation && !scene.diffuse)
+        if self.frame_index > self.max_frames_rendering
+            || (self.frame_index > 1 && !self.enable_accumulation)
+        // && !scene.diffuse)
         {
             return Ok(());
         }
@@ -120,7 +125,9 @@ impl Renderer {
 
                 let mut s = Renderer {
                     accumulated: k.to_vec(),
-                    frame_index: self.frame_index,
+                    enable_accumulation: self.enable_accumulation,
+                    max_frames_rendering: self.max_frames_rendering,
+                    frame_index: self.frame_index
                 };
 
                 let chunk = Chunk {

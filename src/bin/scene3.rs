@@ -1,7 +1,7 @@
 use glam::{vec2, vec3, Vec3};
-use ray_tracing::app::App;
+use ray_tracing::app::App3D;
 use ray_tracing::camera::Camera;
-use ray_tracing::light::{SphericalPositional, Light, LightSource};
+use ray_tracing::light::{SphericalPositional, Light};
 use ray_tracing::objects::{Intersection, Material, MaterialType};
 use ray_tracing::renderer::Renderer;
 use ray_tracing::scene::Scene;
@@ -67,10 +67,10 @@ pub fn main() -> Result<(), AppError> {
     //scene1.ambient_color = vec3(0.4, 0.7, 1.);
     scene.update_func = Some(update);
     scene.diffuse = false;
-    scene.enable_accumulation = false;
     scene.shadow_casting = true;
 
     let mut renderer = Renderer::new();
     let mut camera = Camera::new_with_pos(Vec3::new(0., 2., 5.0), Vec3::new(0., 0., -5.));
-    App::run(&mut camera, &mut renderer, &mut scene)
+
+    App3D::run(&mut camera, &mut scene, &mut renderer)
 }

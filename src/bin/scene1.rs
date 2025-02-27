@@ -1,5 +1,5 @@
 use glam::{vec2, vec3, Vec3};
-use ray_tracing::app::App;
+use ray_tracing::app::App3D;
 use ray_tracing::camera::Camera;
 use ray_tracing::light::{Light, Positional};
 use ray_tracing::objects::{Material, MaterialType, Object3D};
@@ -136,15 +136,11 @@ pub fn main() -> Result<(), AppError> {
     //scene1.ambient_color = vec3(0.4, 0.7, 1.);
     scene.update_func = Some(update);
     scene.diffuse = false;
-    scene.enable_accumulation = false;
     scene.shadow_casting = false;
 
     let scene2 = Scene {
         max_ray_bounces: 5,
-        max_frames_rendering: 10000,
         ambient_color: vec3(0., 0., 0.),
-        diffuse: true,
-        enable_accumulation: true,
         objects: vec![
             Sphere::new(Vec3::new(0., -100.5, 0.), 100., 0),
             Sphere::new(Vec3::new(10., 15., -34.), 20.0, 1),
@@ -179,5 +175,6 @@ pub fn main() -> Result<(), AppError> {
         Vec3::new(-0.76750606, -0.05052291, -0.6390541),
     );
     //let mut camera = Camera::new();
-    App::run(&mut camera, &mut renderer, &mut scene)
+
+    App3D::run(&mut camera, &mut scene, &mut renderer)
 }

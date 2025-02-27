@@ -1,10 +1,11 @@
 use core::f32;
 
-use glam::{vec3, vec4, Mat4, Vec3, Vec3Swizzles, Vec4Swizzles};
+use glam::{vec2, vec3, vec4, Mat4, Vec2, Vec3, Vec3Swizzles, Vec4Swizzles};
 
 use crate::{
     objects::{Intersection, Object3D},
     ray::{Ray, RayHit},
+    scene::Scene,
 };
 
 use super::geometry;
@@ -50,6 +51,19 @@ impl Cylinder {
         self.transform = t;
         self.inv_transform = t.inverse();
         *self
+    }
+
+    pub fn sdf(&self, scene: &Scene, p: Vec3, object: &Object3D) -> (f32, Vec3) {
+        let p = p - self.position;
+        let corner_radius = 0.1;
+        let d = vec2(vec2(p.x, p.z).length(), (p.y).abs()) - vec2(self.radius, self.height * 0.5)
+            + corner_radius;
+        let dist = (d.max(Vec2::ZERO)).length() + d.x.max(d.y).min(0.0) - corner_radius;
+
+        let m = object.material_index();
+        let c = scene.materials[m].albedo;
+
+        (dist, c)
     }
 }
 
@@ -98,7 +112,7 @@ impl Intersection for Cylinder {
             }
         }
 
-        let inv_rd3z = -1./rd3.z;
+        let inv_rd3z = -1. / rd3.z;
         let t1 = (ro3.z - 0.5) * inv_rd3z;
 
         let t2 = (ro3.z + 0.5) * inv_rd3z;
@@ -139,4 +153,5 @@ impl Intersection for Cylinder {
             v: h_t.y,
         })
     }
+
 }

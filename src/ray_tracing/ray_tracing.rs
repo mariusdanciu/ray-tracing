@@ -7,11 +7,13 @@ use crate::objects::{Material, MaterialType};
 use crate::ray::{Ray, RayHit, EPSILON};
 use crate::scene::Scene;
 
+#[derive(Debug, Clone)]
 pub struct RayTracing<'a> {
     pub scene: &'a Scene,
 }
 
 impl<'a> RayTracing<'a> {
+
     pub fn albedo(&self, ray: Ray, rnd: &mut ThreadRng) -> Vec3 {
         let light = Vec3::ZERO; // BLACK
 

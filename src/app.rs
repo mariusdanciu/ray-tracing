@@ -1,4 +1,5 @@
-use glam::Vec2;
+use glam::{vec4, Vec2, Vec4};
+use rand::rngs::ThreadRng;
 use sdl2::event::{Event, WindowEvent};
 
 use sdl2::keyboard::Keycode;
@@ -8,17 +9,19 @@ use std::time::Instant;
 use crate::camera::{Camera, CameraEvent};
 
 use crate::renderer::Renderer;
-use crate::scene::{self, Scene};
+use crate::scene::Scene;
 use crate::utils::errors::AppError;
 
-pub struct App {}
 
-impl App {
+pub struct App3D {}
+
+impl App3D {
     pub fn run(
         camera: &mut Camera,
-        renderer: &mut Renderer,
         scene: &mut Scene,
+        renderer: &mut Renderer,
     ) -> Result<(), AppError> {
+
         let sdl_context = sdl2::init()?;
 
         let video_subsystem = sdl_context.video()?;
@@ -75,6 +78,7 @@ impl App {
         let mut left = false;
         let mut right = false;
         let num_cores = 30; //num_cpus::get();
+
 
         'running: loop {
             let elapsed = frame_time.elapsed();
@@ -241,15 +245,7 @@ impl App {
             }
 
             canvas.clear();
-            renderer.render_par(
-                scene,
-                &mut texture,
-                &mut img,
-                &camera,
-                updated,
-                num_cores,
-                ts,
-            )?;
+            renderer.render(scene, &mut texture, &mut img, &camera, updated, num_cores)?;
             canvas.copy(&texture, None, None)?;
             canvas.present();
 

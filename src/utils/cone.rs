@@ -1,10 +1,11 @@
 use core::f32;
 
-use glam::{vec3, vec4, Mat4, Vec3, Vec3Swizzles, Vec4Swizzles};
+use glam::{vec3, vec4, Mat4, Vec3, Vec3Swizzles, Vec4, Vec4Swizzles};
 
 use crate::{
     objects::{Intersection, Object3D},
     ray::{Ray, RayHit},
+    scene::Scene,
 };
 
 use super::geometry;
@@ -49,6 +50,10 @@ impl Cone {
         self.transform = t;
         self.inv_transform = t.inverse();
         *self
+    }
+
+    pub fn sdf(&self, scene: &Scene, p: Vec3, object: &Object3D) -> (f32, Vec3) {
+        (f32::MAX, Vec3::ZERO)
     }
 }
 

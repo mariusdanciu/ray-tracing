@@ -2,7 +2,14 @@ use std::time::Instant;
 
 use glam::{vec3, Mat4, Vec2, Vec3, Vec4};
 
-use crate::{ray::{Ray, RayHit}, utils::{cone::Cone, cuboid::Cuboid, cylinder::Cylinder, geometry, plane::Plane, sphere::Sphere, triangle::Triangle}};
+use crate::{
+    ray::{Ray, RayHit},
+    scene::Scene,
+    utils::{
+        cone::Cone, cuboid::Cuboid, cylinder::Cylinder, geometry, plane::Plane, sphere::Sphere,
+        triangle::Triangle, union::Union,
+    },
+};
 
 static RGB_RATIO: f32 = 1.0 / 255.0;
 
@@ -18,29 +25,31 @@ pub enum Object3D {
     Plane(Plane),
     Cylinder(Cylinder),
     Cone(Cone),
+    Union(Union),
 }
 
 impl Object3D {
+    pub fn sdf(&self, scene: &Scene, p: Vec3, object: &Object3D) -> (f32, Vec3) {
+        match self {
+            Object3D::Sphere(o) => o.sdf(scene, p, object),
+            Object3D::Triangle(o) => o.sdf(scene, p, object),
+            Object3D::Cuboid(o) => o.sdf(scene, p, object),
+            Object3D::Plane(o) => o.sdf(scene, p, object),
+            Object3D::Cylinder(o) => o.sdf(scene, p, object),
+            Object3D::Cone(o) => o.sdf(scene, p, object),
+            Object3D::Union(o) => o.sdf(scene, p),
+        }
+    }
+
     pub fn material_index(&self) -> usize {
         match self {
-            Object3D::Sphere(o) => {
-                o.material_index
-            },
-            Object3D::Triangle(o)=> {
-                o.material_index
-            },
-            Object3D::Cuboid(o)=> {
-                o.material_index
-            },
-            Object3D::Plane(o)=> {
-                o.material_index
-            },
-            Object3D::Cylinder(o)=> {
-                o.material_index
-            },
-            Object3D::Cone(o)=> {
-                o.material_index
-            },
+            Object3D::Sphere(o) => o.material_index,
+            Object3D::Triangle(o) => o.material_index,
+            Object3D::Cuboid(o) => o.material_index,
+            Object3D::Plane(o) => o.material_index,
+            Object3D::Cylinder(o) => o.material_index,
+            Object3D::Cone(o) => o.material_index,
+            Object3D::Union(o) => 0,
         }
     }
 }
@@ -159,4 +168,3 @@ impl Material {
         reflectivity + (1.0 - reflectivity) * ret
     }
 }
-

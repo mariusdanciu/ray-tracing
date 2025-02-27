@@ -4,6 +4,7 @@ use rand::{rngs::ThreadRng, Rng};
 use crate::light::{Light, LightSource};
 
 use crate::objects::{Intersection, Material, Object3D};
+use crate::utils::geometry;
 
 pub static EPSILON: f32 = 0.0001_f32;
 
@@ -38,11 +39,7 @@ impl Default for RayHit {
 
 impl Ray {
     pub fn reflect(&self, normal: Vec3) -> Vec3 {
-        self.reflect_vec(self.direction, normal)
-    }
-
-    pub fn reflect_vec(&self, vec: Vec3, normal: Vec3) -> Vec3 {
-        vec - (2. * (vec.dot(normal))) * normal
+        geometry::reflect(self.direction, normal)
     }
 
     pub fn blinn_phong(
@@ -70,7 +67,7 @@ impl Ray {
         let diffuse = material.diffuse * coeff.max(0.) * color;
         let shininess = (self
             .direction
-            .dot(self.reflect_vec(-light.direction(hit.point), hit.normal)))
+            .dot(geometry::reflect(-light.direction(hit.point), hit.normal)))
         .max(0.)
         .powf(material.shininess);
         let specular = material.specular * shininess * color;
@@ -152,6 +149,7 @@ impl Ray {
             Object3D::Plane(s) => s.intersect(self),
             Object3D::Cylinder(s) => s.intersect(self),
             Object3D::Cone(s) => s.intersect(self),
+            _ => None
         }
     }
 }

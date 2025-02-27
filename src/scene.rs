@@ -9,20 +9,23 @@ use crate::ray::Ray;
 use crate::ray_marching::RayMarching;
 use crate::ray_tracing::RayTracing;
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct Scene {
     pub lights: Vec<Light>,
     pub ambient_color: Vec3,
     pub objects: Vec<Object3D>,
+    pub sdfs: Vec<usize>,
     pub materials: Vec<Material>,
     pub textures: Vec<Texture>,
-    pub diffuse: bool,
-    pub enable_accumulation: bool,
     pub max_ray_bounces: u8,
-    pub max_frames_rendering: u32,
+
     pub shadow_casting: bool,
     pub ray_marching: bool,
+    pub diffuse: bool,
+    pub enable_accumulation: bool,
+
     pub update_func: Option<fn(&mut Scene, f32) -> bool>,
+
 }
 
 impl Default for Scene {
@@ -31,14 +34,14 @@ impl Default for Scene {
             lights: vec![],
             ambient_color: Default::default(),
             objects: Default::default(),
+            sdfs: Default::default(),
             materials: Default::default(),
             textures: Default::default(),
-            diffuse: Default::default(),
             max_ray_bounces: Default::default(),
-            max_frames_rendering: 1000,
             shadow_casting: false,
-            enable_accumulation: false,
             ray_marching: false,
+            diffuse: false,
+            enable_accumulation: false,
             update_func: None,
         }
     }
@@ -51,19 +54,9 @@ impl Scene {
             objects,
             materials,
             textures: vec![],
-            diffuse: false,
             max_ray_bounces: 4,
             ..Default::default()
         }
-    }
-
-    pub fn to_rgba(c: Vec4) -> (u8, u8, u8, u8) {
-        (
-            (c.x * 255.) as u8,
-            (c.y * 255.) as u8,
-            (c.z * 255.) as u8,
-            (c.w + 255.) as u8,
-        )
     }
 
     pub fn with_light(&self, light: Light) -> Scene {
