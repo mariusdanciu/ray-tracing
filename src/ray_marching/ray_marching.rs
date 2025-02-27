@@ -31,6 +31,14 @@ impl<'a> RayMarching<'a> {
             let idx = *i;
             let obj = self.scene.objects[idx];
             match obj {
+                Object3D::Cuboid(s)  => {
+                    let d = s.sdf(&self.scene, p, &obj);
+                    if d.0 < min_dist {
+                        min_dist = d.0;
+                        albedo = d.1;
+                        obj_idx = idx;
+                    }
+                }
                 Object3D::Sphere(s)  => {
                     let d = s.sdf(&self.scene, p, &obj);
                     if d.0 < min_dist {
@@ -58,6 +66,16 @@ impl<'a> RayMarching<'a> {
                 }
 
                 Object3D::Union(s) => {
+                    let d = s.sdf(self.scene, p);
+
+                    if d.0 < min_dist {
+                        min_dist = d.0;
+                        albedo = d.1;
+                        obj_idx = s.second;
+                    }
+                }
+
+                Object3D::Substraction(s) => {
                     let d = s.sdf(self.scene, p);
 
                     if d.0 < min_dist {
@@ -106,9 +124,9 @@ impl<'a> RayMarching<'a> {
         let mut l_acc = Vec3::ZERO;
         if let Some(material) = self.scene.materials.get(hit.material_index) {
             for l in &self.scene.lights {
-                let k = ray.blinn_phong(&hit, l, albedo, material);
+                let phong = ray.blinn_phong(&hit, l, albedo, material);
                 let light_dis = l.distance(hit.point);
-                l_acc += (k / (light_dis * light_dis)) * l.albedo() * l.intensity();
+                l_acc += (phong / (light_dis * light_dis)) * l.albedo() * l.intensity();
 
                 // let s = self.soft_shadow(
                 //     hit.point + hit.normal * 0.01,

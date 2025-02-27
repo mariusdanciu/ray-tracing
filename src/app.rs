@@ -77,7 +77,7 @@ impl App3D {
         let mut down = false;
         let mut left = false;
         let mut right = false;
-        let num_cores = 30; //num_cpus::get();
+        let num_cores = 200; //num_cpus::get();
 
 
         'running: loop {

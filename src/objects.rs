@@ -6,8 +6,7 @@ use crate::{
     ray::{Ray, RayHit},
     scene::Scene,
     utils::{
-        cone::Cone, cuboid::Cuboid, cylinder::Cylinder, geometry, plane::Plane, sphere::Sphere,
-        triangle::Triangle, union::Union,
+        cone::Cone, cuboid::Cuboid, cylinder::Cylinder, geometry, plane::Plane, sphere::Sphere, substraction::Substraction, triangle::Triangle, union::Union
     },
 };
 
@@ -26,6 +25,7 @@ pub enum Object3D {
     Cylinder(Cylinder),
     Cone(Cone),
     Union(Union),
+    Substraction(Substraction)
 }
 
 impl Object3D {
@@ -38,6 +38,7 @@ impl Object3D {
             Object3D::Cylinder(o) => o.sdf(scene, p, object),
             Object3D::Cone(o) => o.sdf(scene, p, object),
             Object3D::Union(o) => o.sdf(scene, p),
+            Object3D::Substraction(o) => o.sdf(scene, p),
         }
     }
 
@@ -50,6 +51,7 @@ impl Object3D {
             Object3D::Cylinder(o) => o.material_index,
             Object3D::Cone(o) => o.material_index,
             Object3D::Union(o) => 0,
+            Object3D::Substraction(o) => 0,
         }
     }
 }

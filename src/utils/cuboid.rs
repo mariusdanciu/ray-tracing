@@ -50,6 +50,7 @@ impl Cuboid {
     }
 
     pub fn sdf(&self, scene: &Scene, p: Vec3, object: &Object3D) -> (f32, Vec3) {
+        let p = p - self.position;
         let corner_radius = 0.1;
         let q = p.abs() - self.dimension + corner_radius;
         let m = object.material_index();
