@@ -11,7 +11,6 @@ pub struct Plane {
     pub point: Vec3,
     pub max_dist: Option<Vec2>,
     pub material_index: usize,
-    pub part_of_composite: bool
 }
 impl Plane {
     pub fn new(
@@ -24,12 +23,12 @@ impl Plane {
             normal,
             point,
             max_dist,
-            material_index,
-            part_of_composite: false
+            material_index
         })
     }
 
     pub fn sdf(&self, scene: &Scene,  p: Vec3, object: &Object3D) -> (f32, Vec3) {
+        
         let m = object.material_index();
         let c = scene.materials[m].albedo;
 

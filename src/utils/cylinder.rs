@@ -46,15 +46,18 @@ impl Cylinder {
         let t = Mat4::from_translation(self.position)
             * Mat4::from_rotation_x(self.rotation_axis.x * geometry::DEGREES)
             * Mat4::from_rotation_y(self.rotation_axis.y * geometry::DEGREES)
-            * Mat4::from_rotation_z(self.rotation_axis.z * geometry::DEGREES)
-            * Mat4::from_scale(vec3(self.radius, self.radius, self.height));
+            * Mat4::from_rotation_z(self.rotation_axis.z * geometry::DEGREES);
+            //* Mat4::from_scale(vec3(self.radius, self.radius, self.height));
         self.transform = t;
         self.inv_transform = t.inverse();
         *self
     }
 
     pub fn sdf(&self, scene: &Scene, p: Vec3, object: &Object3D) -> (f32, Vec3) {
-        let p = p - self.position;
+        
+        let p = self.inv_transform*vec4(p.x, p.y, p.z, 1.0);
+        let p = p.xyz();
+
         let corner_radius = 0.1;
         let d = vec2(vec2(p.x, p.z).length(), (p.y).abs()) - vec2(self.radius, self.height * 0.5)
             + corner_radius;

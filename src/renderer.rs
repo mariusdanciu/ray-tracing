@@ -1,12 +1,9 @@
-
-
 use glam::Vec4;
 use rand::rngs::ThreadRng;
 use sdl2::render::Texture;
 
 use crate::{camera::Camera, ray::Ray, scene::Scene};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
-
 
 struct Chunk {
     size: usize,
@@ -17,7 +14,7 @@ pub struct Renderer {
     pub accumulated: Vec<Vec4>,
     pub enable_accumulation: bool,
     pub max_frames_rendering: u32,
-    pub frame_index: u32
+    pub frame_index: u32,
 }
 
 impl Renderer {
@@ -26,7 +23,7 @@ impl Renderer {
             accumulated: vec![],
             enable_accumulation: false,
             max_frames_rendering: 1000,
-            frame_index: 1
+            frame_index: 1,
         }
     }
     pub fn to_rgba(c: Vec4) -> (u8, u8, u8, u8) {
@@ -81,7 +78,6 @@ impl Renderer {
         }
     }
 
-
     pub fn render(
         &mut self,
         scene: &mut Scene,
@@ -101,7 +97,6 @@ impl Renderer {
 
         if self.frame_index > self.max_frames_rendering
             || (self.frame_index > 1 && !self.enable_accumulation)
-        // && !scene.diffuse)
         {
             return Ok(());
         }
@@ -127,7 +122,7 @@ impl Renderer {
                     accumulated: k.to_vec(),
                     enable_accumulation: self.enable_accumulation,
                     max_frames_rendering: self.max_frames_rendering,
-                    frame_index: self.frame_index
+                    frame_index: self.frame_index,
                 };
 
                 let chunk = Chunk {

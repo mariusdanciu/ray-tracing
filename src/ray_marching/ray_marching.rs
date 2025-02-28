@@ -1,15 +1,12 @@
-use std::collections::HashSet;
 
-use glam::{vec2, vec3, Vec2, Vec3};
+use glam::{vec2, vec3, Vec3};
 use rand::rngs::ThreadRng;
-use sdl2::libc::newlocale;
 
 use crate::light::LightSource;
-use crate::objects::{Intersection, Material, Object3D};
-use crate::ray::{Ray, RayHit, EPSILON};
-use crate::ray_marching::utils;
+use crate::objects::Object3D;
+use crate::ray::{Ray, RayHit};
 use crate::scene::Scene;
-use crate::utils::geometry::{self, interpolation, mix_vec3};
+use crate::utils::geometry;
 
 static MAX_STEPS: usize = 255;
 static MAX_DISTANCE: f32 = 40.;
@@ -30,6 +27,7 @@ impl<'a> RayMarching<'a> {
         for i in self.scene.sdfs.iter() {
             let idx = *i;
             let obj = self.scene.objects[idx];
+
             match obj {
                 Object3D::Cuboid(s)  => {
                     let d = s.sdf(&self.scene, p, &obj);
@@ -183,8 +181,8 @@ impl<'a> RayMarching<'a> {
             let occ = self.occlusion(hit, n);
 
             color *= occ;
-            //color *= ( -0.05*t ).exp();
-            color *= 1.0 - geometry::smooth_step(5.0, 20.0, t);
+            color *= ( -0.05*t ).exp();
+            color *= 1.0 - geometry::smooth_step(5.0, 30.0, t);
             return color;
         }
 

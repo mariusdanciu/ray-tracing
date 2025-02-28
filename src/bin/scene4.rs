@@ -2,7 +2,7 @@
 use glam::{vec2, vec3, Vec3};
 use ray_tracing::app::App3D;
 use ray_tracing::camera::Camera;
-use ray_tracing::light::{Directional, Light};
+use ray_tracing::light::{Directional, Light, Positional};
 use ray_tracing::objects::{Material, MaterialType, Object3D};
 use ray_tracing::renderer::Renderer;
 use ray_tracing::scene::Scene;
@@ -14,12 +14,15 @@ use ray_tracing::utils::{errors::AppError, image::ImageUtils, plane::Plane, sphe
 
 pub fn update(s: &mut Scene, ts: f32) -> bool {
     let speed = 1.;
-    if let Some(Object3D::Sphere(c)) = s.objects.iter_mut().find(|obj| match **obj {
-        Object3D::Sphere { .. } => true,
-        _ => false,
-    }) {
+
+    if let Some(Object3D::Sphere( c))= s.objects.get_mut(2) {
         c.position.y = (ts).sin() * speed + 0.8;
-        //c.update();
+        c.update();
+    };
+    if let Some(Object3D::Cylinder( cy))= s.objects.get_mut(3) {
+
+        cy.rotation_axis.y += 2. * speed;
+        cy.update();
     };
     true
 }
@@ -30,8 +33,8 @@ pub fn main() -> Result<(), AppError> {
         Union::new(1, 2),
         Plane::new(vec3(0., 1., 0.), vec3(0., 0., 0.), Some(vec2(5., 5.)), 0),
         Sphere::new(Vec3::new(0., -1., -2.), 1., 1),
-        Cylinder::new(vec3(-1., 0.5, 0.2), 0.5, vec3(0., 0., 0.), 1.5, 2),
-        Cuboid::new(vec3(-1., 0.5, 0.2), vec3(0., 0., 0.), vec3(0.5, 1., 0.5), 1),
+        Cylinder::new(vec3(-1., 1.2, 0.2), 0.5, vec3(0., 0., 45.), 1.5, 2),
+        Cuboid::new(vec3(-1., 1.5, 0.2), vec3(0., 20., 0.), vec3(0.5, 1., 0.5), 1),
         Substraction::new(3, 4)
     ];
 
@@ -69,7 +72,7 @@ pub fn main() -> Result<(), AppError> {
         ]
     );
 
-    scene.sdfs = vec!(0, 5);
+    scene.sdfs = vec!(0, 3);
 
     scene = scene
         .with_texture(ImageUtils::load_image("./resources/chess.png")?)

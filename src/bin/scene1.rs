@@ -12,15 +12,14 @@ use ray_tracing::utils::{
 
 pub fn update(s: &mut Scene, ts: f32) -> bool {
     let speed = 0.2;
-    if let Some(Object3D::Cuboid(c)) = s.objects.iter_mut().find(|obj| match **obj {
-        Object3D::Cuboid { .. } => true,
-        _ => false,
-    }) {
+
+    if let Some(Object3D::Cuboid( c))= s.objects.get_mut(3) {
         c.rotation_axis.x += 2. * speed;
         c.rotation_axis.z += 4. * speed;
         c.rotation_axis.y += 2. * speed;
         c.update();
     };
+
     true
 }
 

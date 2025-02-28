@@ -70,10 +70,13 @@ impl Sphere {
     }
 
     pub fn sdf(&self, scene: &Scene, p: Vec3, object: &Object3D) -> (f32, Vec3) {
+        let p = self.inv_transform*vec4(p.x, p.y, p.z, 1.0);
+        let p = p.xyz();
+
         let m = object.material_index();
         let c = scene.materials[m].albedo;
 
-        ((p - self.position).length() - self.radius, c)
+        (p.length() - self.radius, c)
     }
 }
 
