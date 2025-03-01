@@ -1,3 +1,5 @@
+use core::f32;
+
 use glam::{mat3, vec2, vec3, vec4, Vec3, Vec3Swizzles, Vec4Swizzles};
 use rand::rngs::ThreadRng;
 use sdl2::libc::MNT_ASYNC;
@@ -11,6 +13,7 @@ use crate::utils::geometry;
 static MAX_STEPS: usize = 255;
 static MAX_DISTANCE: f32 = 40.;
 static HIT_PRECISION: f32 = 0.001;
+static INV_PI: f32 = 1. / f32::consts::PI;
 
 #[derive(Debug, Clone)]
 pub struct RayMarching<'a> {
@@ -199,23 +202,30 @@ impl<'a> RayMarching<'a> {
             let mat = self.scene.materials[mat_idx];
 
 
+            //let n = (obj.transform().1*vec4(n.x, n.y, n.z, 0.0)).xyz().normalize();
             if let Some(t1) = mat.texture {
-                let n1: Vec3 = (obj.transform().1 * vec4(n.x, n.y, n.z, 0.0)).xyz().normalize();
                 let hit1 = r.origin + r.direction * t;
-
+                let u = ((hit1.x * hit1.x + hit1.y * hit1.y) / (hit1.z)).atan();
+                let v = (hit1.y / hit1.x).atan();
                 let tex = &self.scene.textures[t1];
+                albedo = tex.from_uv(v* INV_PI, u* INV_PI);
 
-                let xy = hit1.xy()*0.5;
-                let xz = hit1.xz()*0.5;
-                let yz = hit1.yz()*0.5;
+                // let n1: Vec3 = (obj.transform().1 * vec4(n.x, n.y, n.z, 0.0)).xyz().normalize();
+                // let hit1 = r.origin + r.direction * t;
 
-                let x = tex.from_uv(yz.x, yz.y); //texture( s, p.yz );
-                let y = tex.from_uv(xz.x, xz.y); //texture( s, p.zx );
-                let z = tex.from_uv(xy.x, xy.y); //texture( s, p.xy );
+                // let tex = &self.scene.textures[t1];
 
-                let bw = n1.abs().powf(8.0);
-                let bw = bw / (bw.x + bw.y + bw.z);
-                albedo = x * bw.x + y * bw.y + z * bw.z;
+                // let xy = hit1.xy()*0.5;
+                // let xz = hit1.xz()*0.5;
+                // let yz = hit1.yz()*0.5;
+
+                // let x = tex.from_uv(yz.x, yz.y); //texture( s, p.yz );
+                // let y = tex.from_uv(xz.x, xz.y); //texture( s, p.zx );
+                // let z = tex.from_uv(xy.x, xy.y); //texture( s, p.xy );
+
+                // let bw = n1.abs().powf(8.0);
+                // let bw = bw / (bw.x + bw.y + bw.z);
+                // albedo = x * bw.x + y * bw.y + z * bw.z;
             }
 
             let rayhit = RayHit {
@@ -227,7 +237,7 @@ impl<'a> RayMarching<'a> {
                 v: 0.0,
             };
 
-            let mut color = self.light(&r, &rayhit, albedo);
+            let mut color = self.light(&ray, &rayhit, albedo);
             let occ = self.occlusion(hit, n);
 
             color *= occ;

@@ -37,7 +37,8 @@ pub fn main() -> Result<(), AppError> {
             vec3(0.5, 1., 0.5),
             1,
         ),
-        Sphere::new(Vec3::new(2., 1., -2.), 1., 3),
+       // Sphere::new(Vec3::new(2., 1., -2.), 1., 3),
+        Sphere::new_sphere_with_rotation(Vec3::new(2.0, 1., -2.), vec3(-90., 0., 0.), 1., 3),
         Substraction::new(3, 4),
     ];
 
@@ -49,7 +50,7 @@ pub fn main() -> Result<(), AppError> {
                 diffuse: 0.2,
                 shininess: 5.,
                 specular: 0.8,
-                albedo: Vec3::new(0.4, 0.4, 0.4),
+                albedo: Vec3::new(1., 0.8, 0.6),
                 kind: MaterialType::Reflective { roughness: 1. },
                 ..Default::default()
             },
@@ -58,7 +59,7 @@ pub fn main() -> Result<(), AppError> {
                 diffuse: 0.4,
                 shininess: 64.,
                 specular: 0.5,
-                albedo: Vec3::new(0.4, 0.4, 0.4),
+                albedo: Vec3::new(1., 0.8, 0.6),
                 kind: MaterialType::Reflective { roughness: 1. },
                 ..Default::default()
             },
@@ -73,10 +74,10 @@ pub fn main() -> Result<(), AppError> {
                 ..Default::default()
             },
             Material {
-                ambience: 0.4,
+                ambience: 0.3,
                 diffuse: 0.4,
-                shininess: 64.,
-                specular: 1.5,
+                shininess: 84.,
+                specular: 0.8,
                 albedo: Vec3::new(0.0, 0.4, 1.),
                 kind: MaterialType::Reflective { roughness: 1. },
                 texture: Some(3),
