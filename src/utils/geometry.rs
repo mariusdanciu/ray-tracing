@@ -1,4 +1,6 @@
-use glam::{vec3, Mat4, Vec3};
+use glam::{vec3, Mat4, Vec3, Vec3Swizzles};
+
+use crate::objects::Texture;
 
 pub static DEGREES: f32 = std::f32::consts::PI / 180.;
 
@@ -49,4 +51,18 @@ pub fn smooth_union(d1: f32, d2: f32, k: f32) -> f32 {
 
 pub fn pow_vec3(v: Vec3, c: Vec3) -> Vec3 {
     vec3(v.x.powf(c.x), v.y.powf(c.y), v.z.powf(c.z))
+}
+
+pub fn tri_planar_mapping(p: Vec3, n: Vec3, blending: f32, scale: f32, tex: &Texture) -> Vec3 {
+    let xy = p.xy() * scale;
+    let xz = p.xz() * scale;
+    let yz = p.yz() * scale;
+
+    let x = tex.from_uv(yz.x, yz.y); 
+    let y = tex.from_uv(xz.x, xz.y); 
+    let z = tex.from_uv(xy.x, xy.y); 
+
+    let bw = n.abs().powf(blending);
+    let bw = bw / (bw.x + bw.y + bw.z);
+    x * bw.x + y * bw.y + z * bw.z
 }

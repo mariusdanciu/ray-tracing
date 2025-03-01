@@ -30,7 +30,7 @@ pub fn main() -> Result<(), AppError> {
         Union::new(1, 2),
         Plane::new(vec3(0., 1., 0.), vec3(0., 0., 0.), Some(vec2(5., 5.)), 0),
         Sphere::new(Vec3::new(0., -1., -2.), 1., 1),
-        Cylinder::new(vec3(-1., 1.2, 0.2), 0.5, vec3(0., 0., 45.), 1.5, 2),
+        Cylinder::new(vec3(-1., 1.2, 0.2), 0.2, vec3(0., 0., 45.), 1.0, 2),
         Cuboid::new(
             vec3(-1., 1.5, 0.2),
             vec3(0., 20., 0.),
