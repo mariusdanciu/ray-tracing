@@ -23,19 +23,22 @@ impl Union {
         scene.objects[self.first].material_index()
     }
 
-    pub fn sdf(&self, scene: &Scene, p: Vec3) -> (f32, Vec3) {
+    pub fn sdf(&self, scene: &Scene, ray: &Ray, t: f32) -> (f32, Vec3, Ray) {
+        //let p = ray.origin + ray.direction * t;
         let o1 = scene.objects[self.first];
         let o2 = scene.objects[self.second];
 
-        let (d1, c1) = o1.sdf(scene, p, &o1);
-        let (d2, c2) = o2.sdf(scene, p, &o2);
+        let (d1, c1, r1) = o1.sdf(scene, ray, t, &o1);
+        let (d2, c2, r2) = o2.sdf(scene, ray, t, &o2);
 
         let i = geometry::interpolation(d1, d2, 0.7);
         let col = geometry::mix_vec3(c1, c2, 1. - i);
 
         let d = geometry::smooth_union(d1, d2, 0.7);
-
-        (d, col)
+        if d1 < d2 {
+            return (d, col, r1)
+        }
+        (d, col, r2)
     }
 }
 

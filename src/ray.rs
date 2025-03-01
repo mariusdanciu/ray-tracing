@@ -38,6 +38,12 @@ impl Default for RayHit {
 }
 
 impl Ray {
+    pub fn new() -> Ray{
+        Ray{
+            origin: Vec3::ZERO,
+            direction: Vec3::ZERO
+        }
+    }
     pub fn reflect(&self, normal: Vec3) -> Vec3 {
         geometry::reflect(self.direction, normal)
     }

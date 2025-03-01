@@ -83,7 +83,7 @@ impl Scene {
             tracer.albedo(ray, rnd)
         } else {
             let tracer = RayMarching { scene: self };
-            tracer.albedo(ray, rnd)
+            tracer.albedo(&ray, rnd)
         };
 
         vec4(light.x, light.y, light.z, 1.)

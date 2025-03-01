@@ -17,8 +17,8 @@ pub struct Cylinder {
     pub height: f32,
     pub rotation_axis: Vec3,
     pub material_index: usize,
-    transform: Mat4,
-    inv_transform: Mat4,
+    pub transform: Mat4,
+    pub inv_transform: Mat4,
 }
 
 impl Cylinder {
@@ -47,16 +47,19 @@ impl Cylinder {
             * Mat4::from_rotation_x(self.rotation_axis.x * geometry::DEGREES)
             * Mat4::from_rotation_y(self.rotation_axis.y * geometry::DEGREES)
             * Mat4::from_rotation_z(self.rotation_axis.z * geometry::DEGREES);
-            //* Mat4::from_scale(vec3(self.radius, self.radius, self.height));
+        //* Mat4::from_scale(vec3(self.radius, self.radius, self.height));
         self.transform = t;
         self.inv_transform = t.inverse();
         *self
     }
 
-    pub fn sdf(&self, scene: &Scene, p: Vec3, object: &Object3D) -> (f32, Vec3) {
-        
-        let p = self.inv_transform*vec4(p.x, p.y, p.z, 1.0);
-        let p = p.xyz();
+    pub fn sdf(&self, scene: &Scene, ray: &Ray, t: f32, object: &Object3D) -> (f32, Vec3, Ray) {
+        let ray = self.transform_ray(ray);
+
+        let p = ray.origin + ray.direction * t;
+
+        //let p = self.inv_transform * vec4(p.x, p.y, p.z, 1.0);
+        //let p = p.xyz();
 
         let corner_radius = 0.1;
         let d = vec2(vec2(p.x, p.z).length(), (p.y).abs()) - vec2(self.radius, self.height * 0.5)
@@ -64,9 +67,22 @@ impl Cylinder {
         let dist = (d.max(Vec2::ZERO)).length() + d.x.max(d.y).min(0.0) - corner_radius;
 
         let m = object.material_index();
-        let c = scene.materials[m].albedo;
+        let mat = scene.materials[m];
+        let c = mat.albedo;
 
-        (dist, c)
+        (dist, c, ray)
+    }
+
+    pub fn transform_normal(&self, n: Vec3) -> Vec3 {
+        (self.transform * vec4(n.x, n.y, n.z, 0.0)).xyz()
+    }
+
+    pub fn transform_ray(&self, n: &Ray) -> Ray {
+        Ray {
+            direction: (self.inv_transform * vec4(n.direction.x, n.direction.y, n.direction.z, 0.))
+                .xyz(),
+            origin: (self.inv_transform * vec4(n.origin.x, n.origin.y, n.origin.z, 1.)).xyz(),
+        }
     }
 }
 
@@ -156,5 +172,4 @@ impl Intersection for Cylinder {
             v: h_t.y,
         })
     }
-
 }

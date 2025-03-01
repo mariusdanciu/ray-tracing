@@ -2,7 +2,8 @@ use glam::{Vec2, Vec3};
 
 use crate::{
     objects::{Intersection, Object3D},
-    ray::{Ray, RayHit}, scene::Scene,
+    ray::{Ray, RayHit},
+    scene::Scene,
 };
 
 #[derive(Debug, Clone, Copy)]
@@ -23,16 +24,16 @@ impl Plane {
             normal,
             point,
             max_dist,
-            material_index
+            material_index,
         })
     }
 
-    pub fn sdf(&self, scene: &Scene,  p: Vec3, object: &Object3D) -> (f32, Vec3) {
-        
+    pub fn sdf(&self, scene: &Scene, ray: &Ray, t: f32, object: &Object3D) -> (f32, Vec3, Ray) {
+        let p = ray.origin + ray.direction * t;
         let m = object.material_index();
         let c = scene.materials[m].albedo;
 
-        ((p - self.point).dot(self.normal), c)
+        ((p - self.point).dot(self.normal), c, *ray)
     }
 }
 
@@ -71,5 +72,4 @@ impl Intersection for Plane {
             v: hit_point.z * 0.1,
         })
     }
-
 }

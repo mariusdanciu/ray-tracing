@@ -46,3 +46,7 @@ pub fn smooth_union(d1: f32, d2: f32, k: f32) -> f32 {
 
     return mix(d2, d1, h) - k * h * (1. - h);
 }
+
+pub fn pow_vec3(v: Vec3, c: Vec3) -> Vec3 {
+    vec3(v.x.powf(c.x), v.y.powf(c.y), v.z.powf(c.z))
+}

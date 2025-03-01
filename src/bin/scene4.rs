@@ -1,4 +1,3 @@
-
 use glam::{vec2, vec3, Vec3};
 use ray_tracing::app::App3D;
 use ray_tracing::camera::Camera;
@@ -13,20 +12,18 @@ use ray_tracing::utils::union::Union;
 use ray_tracing::utils::{errors::AppError, image::ImageUtils, plane::Plane, sphere::Sphere};
 
 pub fn update(s: &mut Scene, ts: f32) -> bool {
-    let speed = 1.;
+    let speed = 0.5;
 
-    if let Some(Object3D::Sphere( c))= s.objects.get_mut(2) {
-        c.position.y = (ts).sin() * speed + 0.8;
+    if let Some(Object3D::Sphere(c)) = s.objects.get_mut(2) {
+        c.position.y = (ts).sin() * 2.0 * speed + 0.8;
         c.update();
     };
-    if let Some(Object3D::Cylinder( cy))= s.objects.get_mut(3) {
-
-        cy.rotation_axis.y += 2. * speed;
+    if let Some(Object3D::Cylinder(cy)) = s.objects.get_mut(3) {
+        cy.rotation_axis.y += 2.0 * speed;
         cy.update();
     };
     true
 }
-
 
 pub fn main() -> Result<(), AppError> {
     let objs = vec![
@@ -34,8 +31,14 @@ pub fn main() -> Result<(), AppError> {
         Plane::new(vec3(0., 1., 0.), vec3(0., 0., 0.), Some(vec2(5., 5.)), 0),
         Sphere::new(Vec3::new(0., -1., -2.), 1., 1),
         Cylinder::new(vec3(-1., 1.2, 0.2), 0.5, vec3(0., 0., 45.), 1.5, 2),
-        Cuboid::new(vec3(-1., 1.5, 0.2), vec3(0., 20., 0.), vec3(0.5, 1., 0.5), 1),
-        Substraction::new(3, 4)
+        Cuboid::new(
+            vec3(-1., 1.5, 0.2),
+            vec3(0., 20., 0.),
+            vec3(0.5, 1., 0.5),
+            1,
+        ),
+        Sphere::new(Vec3::new(2., 1., -2.), 1., 3),
+        Substraction::new(3, 4),
     ];
 
     let mut scene = Scene::new(
@@ -48,7 +51,6 @@ pub fn main() -> Result<(), AppError> {
                 specular: 0.8,
                 albedo: Vec3::new(0.4, 0.4, 0.4),
                 kind: MaterialType::Reflective { roughness: 1. },
-                texture: Some(0),
                 ..Default::default()
             },
             Material {
@@ -64,15 +66,26 @@ pub fn main() -> Result<(), AppError> {
                 ambience: 0.4,
                 diffuse: 0.4,
                 shininess: 64.,
-                specular: 0.5,
+                specular: 1.5,
                 albedo: Vec3::new(0.0, 0.4, 1.),
                 kind: MaterialType::Reflective { roughness: 1. },
+                texture: Some(2),
                 ..Default::default()
             },
-        ]
+            Material {
+                ambience: 0.4,
+                diffuse: 0.4,
+                shininess: 64.,
+                specular: 1.5,
+                albedo: Vec3::new(0.0, 0.4, 1.),
+                kind: MaterialType::Reflective { roughness: 1. },
+                texture: Some(3),
+                ..Default::default()
+            },
+        ],
     );
 
-    scene.sdfs = vec!(0, 3);
+    scene.sdfs = vec![0, 3, 5];
 
     scene = scene
         .with_texture(ImageUtils::load_image("./resources/chess.png")?)
@@ -93,8 +106,7 @@ pub fn main() -> Result<(), AppError> {
             albedo: vec3(1., 1., 1.),
             direction: vec3(-1., -1., -2.).normalize(),
             intensity: 2.,
-        }))
-        ;
+        }));
     //scene1.ambient_color = vec3(0.4, 0.7, 1.);
     scene.update_func = Some(update);
     scene.diffuse = false;
@@ -103,6 +115,6 @@ pub fn main() -> Result<(), AppError> {
 
     let mut renderer = Renderer::new();
     let mut camera = Camera::new_with_pos(Vec3::new(0., 2., 4.0), Vec3::new(0., 0., -1.));
-    
+
     App3D::run(&mut camera, &mut scene, &mut renderer)
 }

@@ -17,8 +17,8 @@ pub struct Cone {
     pub height: f32,
     pub rotation_axis: Vec3,
     pub material_index: usize,
-    transform: Mat4,
-    inv_transform: Mat4,
+    pub transform: Mat4,
+    pub inv_transform: Mat4,
 }
 
 impl Cone {
@@ -52,8 +52,20 @@ impl Cone {
         *self
     }
 
-    pub fn sdf(&self, scene: &Scene, p: Vec3, object: &Object3D) -> (f32, Vec3) {
-        (f32::MAX, Vec3::ZERO)
+    pub fn sdf(&self, scene: &Scene, ray: &Ray, t: f32, object: &Object3D) -> (f32, Vec3, Ray) {
+        (f32::MAX, Vec3::ZERO, Ray::new())
+    }
+
+    pub fn transform_normal(&self, n: Vec3) -> Vec3 {
+        (self.transform * vec4(n.x, n.y, n.z, 1.0)).xyz()
+    }
+
+    pub fn transform_ray(&self, n: &Ray) -> Ray {
+        Ray {
+            direction: (self.inv_transform * vec4(n.direction.x, n.direction.y, n.direction.z, 0.))
+                .xyz(),
+            origin: (self.inv_transform * vec4(n.origin.x, n.origin.y, n.origin.z, 1.)).xyz(),
+        }
     }
 }
 

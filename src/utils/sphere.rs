@@ -18,8 +18,8 @@ pub struct Sphere {
     pub radius: f32,
     pub material_index: usize,
     pub part_of_composite: bool,
-    transform: Mat4,
-    inv_transform: Mat4,
+    pub transform: Mat4,
+    pub inv_transform: Mat4,
 }
 
 impl Sphere {
@@ -69,14 +69,28 @@ impl Sphere {
         *self
     }
 
-    pub fn sdf(&self, scene: &Scene, p: Vec3, object: &Object3D) -> (f32, Vec3) {
-        let p = self.inv_transform*vec4(p.x, p.y, p.z, 1.0);
-        let p = p.xyz();
+    pub fn sdf(&self, scene: &Scene, ray: &Ray, t: f32, object: &Object3D) -> (f32, Vec3, Ray) {
+        let ray = self.transform_ray(ray);
+        let p = ray.origin + ray.direction * t;
+        //let p = self.inv_transform * vec4(p.x, p.y, p.z, 1.0);
+        //let p = p.xyz();
 
         let m = object.material_index();
         let c = scene.materials[m].albedo;
 
-        (p.length() - self.radius, c)
+        (p.length() - self.radius, c, ray)
+    }
+
+    pub fn transform_normal(&self, n: Vec3) -> Vec3 {
+        (self.transform * vec4(n.x, n.y, n.z, 1.0)).xyz()
+    }
+
+    pub fn transform_ray(&self, n: &Ray) -> Ray {
+        Ray {
+            direction: (self.inv_transform * vec4(n.direction.x, n.direction.y, n.direction.z, 0.))
+                .xyz(),
+            origin: (self.inv_transform * vec4(n.origin.x, n.origin.y, n.origin.z, 1.)).xyz(),
+        }
     }
 }
 
@@ -131,6 +145,4 @@ impl Intersection for Sphere {
             v: u * INV_PI,
         })
     }
-
-
 }

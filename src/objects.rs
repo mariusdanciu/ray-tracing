@@ -6,7 +6,8 @@ use crate::{
     ray::{Ray, RayHit},
     scene::Scene,
     utils::{
-        cone::Cone, cuboid::Cuboid, cylinder::Cylinder, geometry, plane::Plane, sphere::Sphere, substraction::Substraction, triangle::Triangle, union::Union
+        cone::Cone, cuboid::Cuboid, cylinder::Cylinder, geometry, plane::Plane, sphere::Sphere,
+        substraction::Substraction, triangle::Triangle, union::Union,
     },
 };
 
@@ -25,20 +26,20 @@ pub enum Object3D {
     Cylinder(Cylinder),
     Cone(Cone),
     Union(Union),
-    Substraction(Substraction)
+    Substraction(Substraction),
 }
 
 impl Object3D {
-    pub fn sdf(&self, scene: &Scene, p: Vec3, object: &Object3D) -> (f32, Vec3) {
+    pub fn sdf(&self, scene: &Scene, ray: &Ray, t: f32, object: &Object3D) -> (f32, Vec3, Ray) {
         match self {
-            Object3D::Sphere(o) => o.sdf(scene, p, object),
-            Object3D::Triangle(o) => o.sdf(scene, p, object),
-            Object3D::Cuboid(o) => o.sdf(scene, p, object),
-            Object3D::Plane(o) => o.sdf(scene, p, object),
-            Object3D::Cylinder(o) => o.sdf(scene, p, object),
-            Object3D::Cone(o) => o.sdf(scene, p, object),
-            Object3D::Union(o) => o.sdf(scene, p),
-            Object3D::Substraction(o) => o.sdf(scene, p),
+            Object3D::Sphere(o) => o.sdf(scene, ray, t, object),
+            Object3D::Triangle(o) => o.sdf(scene, ray, t, object),
+            Object3D::Cuboid(o) => o.sdf(scene, ray, t, object),
+            Object3D::Plane(o) => o.sdf(scene, ray, t, object),
+            Object3D::Cylinder(o) => o.sdf(scene, ray, t, object),
+            Object3D::Cone(o) => o.sdf(scene, ray, t, object),
+            Object3D::Union(o) => o.sdf(scene, ray, t),
+            Object3D::Substraction(o) => o.sdf(scene, ray, t),
         }
     }
 
@@ -52,6 +53,31 @@ impl Object3D {
             Object3D::Cone(o) => o.material_index,
             Object3D::Union(o) => 0,
             Object3D::Substraction(o) => 0,
+        }
+    }
+    pub fn transform_normal(&self, n: Vec3) -> Vec3 {
+        match self {
+            Object3D::Sphere(o) => o.transform_normal(n),
+            Object3D::Triangle(o) => n,
+            Object3D::Cuboid(o) => o.transform_normal(n),
+            Object3D::Plane(o) => n,
+            Object3D::Cylinder(o) => o.transform_normal(n),
+            Object3D::Cone(o) => o.transform_normal(n),
+            Object3D::Union(o) => n,
+            Object3D::Substraction(o) => n,
+        }
+    }
+
+    pub fn transform(&self) -> (Mat4, Mat4) {
+        match self {
+            Object3D::Sphere(o) => (o.transform, o.inv_transform),
+            Object3D::Triangle(o) => (Mat4::IDENTITY, Mat4::IDENTITY),
+            Object3D::Cuboid(o) => (o.transform, o.inv_transform),
+            Object3D::Plane(o) => (Mat4::IDENTITY, Mat4::IDENTITY),
+            Object3D::Cylinder(o) => (o.transform, o.inv_transform),
+            Object3D::Cone(o) => (o.transform, o.inv_transform),
+            Object3D::Union(o) => (Mat4::IDENTITY, Mat4::IDENTITY),
+            Object3D::Substraction(o) => (Mat4::IDENTITY, Mat4::IDENTITY)
         }
     }
 }
