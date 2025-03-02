@@ -52,7 +52,7 @@ impl Cone {
         *self
     }
 
-    pub fn sdf(&self, scene: &Scene, ray: &Ray, t: f32, object: &Object3D) -> RayMarchingHits {
+    pub fn sdf(&self, scene: &Scene, ray: &Ray, t: f32, object: &Object3D) -> RayMarchingHit {
         RayMarchingHit::new(f32::MAX, Vec3::ZERO, Ray::new())
     }
 
