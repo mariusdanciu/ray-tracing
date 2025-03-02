@@ -4,7 +4,7 @@ use glam::{vec3, vec4, Mat4, Vec3, Vec3Swizzles, Vec4, Vec4Swizzles};
 
 use crate::{
     objects::{Intersection, Object3D},
-    ray::{Ray, RayHit},
+    ray::{Ray, RayHit, RayMarchingHit},
     scene::Scene,
 };
 
@@ -52,8 +52,8 @@ impl Cone {
         *self
     }
 
-    pub fn sdf(&self, scene: &Scene, ray: &Ray, t: f32, object: &Object3D) -> (f32, Vec3, Ray) {
-        (f32::MAX, Vec3::ZERO, Ray::new())
+    pub fn sdf(&self, scene: &Scene, ray: &Ray, t: f32, object: &Object3D) -> RayMarchingHits {
+        RayMarchingHit::new(f32::MAX, Vec3::ZERO, Ray::new())
     }
 
     pub fn transform_normal(&self, n: Vec3) -> Vec3 {

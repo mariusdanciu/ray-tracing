@@ -4,7 +4,7 @@ use glam::{Vec3, Vec4Swizzles};
 
 use crate::{
     objects::{Intersection, Object3D},
-    ray::{Ray, RayHit},
+    ray::{Ray, RayHit, RayMarchingHit},
     scene::Scene,
 };
 
@@ -26,8 +26,8 @@ impl Triangle {
         })
     }
 
-    pub fn sdf(&self, scene: &Scene, ray: &Ray, t: f32, object: &Object3D) -> (f32, Vec3, Ray) {
-        (f32::MAX, Vec3::ZERO, Ray::new())
+    pub fn sdf(&self, scene: &Scene, ray: &Ray, t: f32, object: &Object3D) -> RayMarchingHit {
+        RayMarchingHit::new(f32::MAX, Vec3::ZERO, Ray::new())
     }
 }
 

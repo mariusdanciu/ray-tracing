@@ -3,7 +3,7 @@ use std::time::Instant;
 use glam::{vec3, Mat4, Vec2, Vec3, Vec4};
 
 use crate::{
-    ray::{Ray, RayHit},
+    ray::{Ray, RayHit, RayMarchingHit},
     scene::Scene,
     utils::{
         cone::Cone, cuboid::Cuboid, cylinder::Cylinder, geometry, plane::Plane, sphere::Sphere,
@@ -30,7 +30,7 @@ pub enum Object3D {
 }
 
 impl Object3D {
-    pub fn sdf(&self, scene: &Scene, ray: &Ray, t: f32, object: &Object3D) -> (f32, Vec3, Ray) {
+    pub fn sdf(&self, scene: &Scene, ray: &Ray, t: f32, object: &Object3D) -> RayMarchingHit{
         match self {
             Object3D::Sphere(o) => o.sdf(scene, ray, t, object),
             Object3D::Triangle(o) => o.sdf(scene, ray, t, object),

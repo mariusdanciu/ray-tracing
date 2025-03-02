@@ -6,7 +6,7 @@ use sdl2::libc::MNT_ASYNC;
 
 use crate::light::LightSource;
 use crate::objects::Object3D;
-use crate::ray::{Ray, RayHit};
+use crate::ray::{Ray, RayHit, RayMarchingHit};
 use crate::scene::Scene;
 use crate::utils::geometry;
 
@@ -21,7 +21,7 @@ pub struct RayMarching<'a> {
 }
 
 impl<'a> RayMarching<'a> {
-    pub fn sdfs(&self, ray: &Ray, t: f32) -> (f32, usize, Vec3, Ray) {
+    pub fn sdfs(&self, ray: &Ray, t: f32) -> (usize, RayMarchingHit) {
         let mut min_dist = f32::MAX;
         let mut obj_idx = 0usize;
 
@@ -35,66 +35,75 @@ impl<'a> RayMarching<'a> {
             match obj {
                 Object3D::Cuboid(s) => {
                     let d = s.sdf(&self.scene, &ray, t, &obj);
-                    if d.0 < min_dist {
-                        min_dist = d.0;
-                        albedo = d.1;
-                        tray = d.2;
+                    if d.distance < min_dist {
+                        min_dist = d.distance;
+                        albedo = d.albedo;
+                        tray = d.transformed_ray;
                         obj_idx = idx;
                     }
                 }
                 Object3D::Sphere(s) => {
                     let d = s.sdf(&self.scene, ray, t, &obj);
-                    if d.0 < min_dist {
-                        min_dist = d.0;
-                        albedo = d.1;
-                        tray = d.2;
+                    if d.distance < min_dist {
+                        min_dist = d.distance;
+                        albedo = d.albedo;
+                        tray = d.transformed_ray;
                         obj_idx = idx;
                     }
                 }
                 Object3D::Plane(s) => {
                     let d = s.sdf(&self.scene, ray, t, &obj);
-                    if d.0 < min_dist {
-                        min_dist = d.0;
-                        albedo = d.1;
-                        tray = d.2;
+                    if d.distance < min_dist {
+                        min_dist = d.distance;
+                        albedo = d.albedo;
+                        tray = d.transformed_ray;
                         obj_idx = idx;
                     }
                 }
 
                 Object3D::Cylinder(s) => {
                     let d = s.sdf(&self.scene, ray, t, &obj);
-                    if d.0 < min_dist {
-                        min_dist = d.0;
+                    if d.distance < min_dist {
+                        min_dist = d.distance;
+                        albedo = d.albedo;
+                        tray = d.transformed_ray;
                         obj_idx = idx;
-                        tray = d.2;
-                        albedo = d.1
                     }
                 }
 
                 Object3D::Union(s) => {
                     let d = s.sdf(self.scene, ray, t);
 
-                    if d.0 < min_dist {
-                        min_dist = d.0;
-                        albedo = d.1;
+                    if d.distance < min_dist {
+                        min_dist = d.distance;
+                        albedo = d.albedo;
                         obj_idx = s.second;
+                        tray = d.transformed_ray;
                     }
                 }
 
                 Object3D::Substraction(s) => {
                     let d = s.sdf(self.scene, ray, t);
 
-                    if d.0 < min_dist {
-                        min_dist = d.0;
-                        albedo = d.1;
+                    if d.distance < min_dist {
+                        min_dist = d.distance;
+                        albedo = d.albedo;
                         obj_idx = s.second;
+                        tray = d.transformed_ray;
                     }
                 }
                 _ => {}
             }
         }
 
-        (min_dist, obj_idx, albedo, tray)
+        (
+            obj_idx,
+            RayMarchingHit {
+                distance: min_dist,
+                albedo,
+                transformed_ray: tray,
+            },
+        )
     }
 
     fn normal(&self, p: Vec3) -> Vec3 {
@@ -122,10 +131,10 @@ impl<'a> RayMarching<'a> {
             origin: p,
             direction: xxx,
         };
-        (xyy * self.sdfs(&r_xyy, k).0
-            + yyx * self.sdfs(&r_yyx, k).0
-            + yxy * self.sdfs(&r_yxy, k).0
-            + xxx * self.sdfs(&r_xxx, k).0)
+        (xyy * self.sdfs(&r_xyy, k).1.distance
+            + yyx * self.sdfs(&r_yyx, k).1.distance
+            + yxy * self.sdfs(&r_yxy, k).1.distance
+            + xxx * self.sdfs(&r_xxx, k).1.distance)
             .normalize()
     }
 
@@ -142,7 +151,7 @@ impl<'a> RayMarching<'a> {
                 },
                 hr,
             );
-            occ += -(dd.0 - hr) * sca;
+            occ += -(dd.1.distance - hr) * sca;
             sca *= 0.85;
         }
         return 1.0 - occ.clamp(0.0, 1.0);
@@ -169,7 +178,7 @@ impl<'a> RayMarching<'a> {
         l_acc.powf(0.4545)
     }
 
-    pub fn march_ray(&self, ray: &Ray) -> (bool, f32, usize, Vec3, Ray) {
+    pub fn march_ray(&self, ray: &Ray) -> Option<(usize, RayMarchingHit)> {
         let mut t = 0.0;
 
         // March the ray
@@ -178,28 +187,32 @@ impl<'a> RayMarching<'a> {
             if t > MAX_DISTANCE {
                 break;
             }
-            let (h, obj_idx, albedo, ray) = self.sdfs(ray, t);
 
-            t += h;
-            if h < HIT_PRECISION {
-                return (true, t, obj_idx, albedo, ray);
+            let (obj_idx, rh) = self.sdfs(ray, t);
+            t += rh.distance;
+            if rh.distance < HIT_PRECISION {
+                return Some((obj_idx, RayMarchingHit{
+                    distance: t,
+                    albedo: rh.albedo,
+                    transformed_ray: rh.transformed_ray,
+                }));
             }
             i += 1;
         }
-        (false, t, 0, Vec3::ZERO, Ray::new())
+        None
     }
 
     pub fn albedo(&self, ray: &Ray, rnd: &mut ThreadRng) -> Vec3 {
-        let (hit, t, obj_idx, mut albedo, r) = self.march_ray(ray);
-
-        if hit {
-            let hit = ray.origin + ray.direction * t;
+       // let (hit, t, obj_idx, mut albedo, r) = self.march_ray(ray);
+        if let Some((obj_idx, rh)) = self.march_ray(ray) {
+            let hit = ray.origin + ray.direction * rh.distance;
 
             let n = self.normal(hit);
 
             let obj = self.scene.objects[obj_idx];
             let mat_idx = obj.material_index();
             let mat = self.scene.materials[mat_idx];
+            let mut albedo = rh.albedo;
 
             //let n = (obj.transform().1*vec4(n.x, n.y, n.z, 0.0)).xyz().normalize();
             if let Some(t1) = mat.texture {
@@ -212,14 +225,14 @@ impl<'a> RayMarching<'a> {
                 let n1: Vec3 = (obj.transform().1 * vec4(n.x, n.y, n.z, 0.0))
                     .xyz()
                     .normalize();
-                let hit1 = r.origin + r.direction * t;
+                let hit1 = rh.transformed_ray.origin + rh.transformed_ray.direction * rh.distance;
 
                 let tex = &self.scene.textures[t1];
                 albedo = geometry::tri_planar_mapping(hit1, n1, 0.8, 0.5, tex);
             }
 
             let rayhit = RayHit {
-                distance: t,
+                distance: rh.distance,
                 point: hit,
                 normal: n,
                 material_index: mat_idx,
@@ -231,8 +244,8 @@ impl<'a> RayMarching<'a> {
             let occ = self.occlusion(hit, n);
 
             color *= occ;
-           // color *= geometry::fog(color, t, vec3(0., 0., 0.), 0.05); //(-0.05 * t).exp();
-            color *= 1.0 - geometry::smooth_step(1.0, 20.0, t);
+            // color *= geometry::fog(color, t, vec3(0., 0., 0.), 0.05); //(-0.05 * t).exp();
+            color *= 1.0 - geometry::smooth_step(1.0, 20.0, rh.distance);
             return color;
         }
 

@@ -15,6 +15,23 @@ pub struct Ray {
 }
 
 #[derive(Debug, Copy, Clone)]
+pub struct RayMarchingHit {
+    pub distance: f32,
+    pub albedo: Vec3,
+    pub transformed_ray: Ray,
+}
+
+impl RayMarchingHit {
+    pub fn new(distance: f32, albedo: Vec3, transformed_ray: Ray) -> RayMarchingHit {
+        RayMarchingHit {
+            distance,
+            albedo,
+            transformed_ray,
+        }
+    }
+}
+
+#[derive(Debug, Copy, Clone)]
 pub struct RayHit {
     pub distance: f32,
     pub point: Vec3,
@@ -38,10 +55,10 @@ impl Default for RayHit {
 }
 
 impl Ray {
-    pub fn new() -> Ray{
-        Ray{
+    pub fn new() -> Ray {
+        Ray {
             origin: Vec3::ZERO,
-            direction: Vec3::ZERO
+            direction: Vec3::ZERO,
         }
     }
     pub fn reflect(&self, normal: Vec3) -> Vec3 {
@@ -56,7 +73,7 @@ impl Ray {
         material: &Material,
     ) -> Vec3 {
         let coeff = hit.normal.dot(-light.direction(hit.point));
-        let ambience = material.ambience * color ;
+        let ambience = material.ambience * color;
         let diffuse = material.diffuse * coeff.max(0.) * color;
         let half_angle = (-self.direction - light.direction(hit.point)).normalize();
         let shininess = (hit.normal.dot(half_angle))
@@ -155,7 +172,7 @@ impl Ray {
             Object3D::Plane(s) => s.intersect(self),
             Object3D::Cylinder(s) => s.intersect(self),
             Object3D::Cone(s) => s.intersect(self),
-            _ => None
+            _ => None,
         }
     }
 }

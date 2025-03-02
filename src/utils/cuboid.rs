@@ -2,7 +2,8 @@ use glam::{vec3, vec4, Mat4, Vec3, Vec3Swizzles, Vec4Swizzles};
 
 use crate::{
     objects::{Intersection, Object3D},
-    ray::{Ray, RayHit}, scene::Scene,
+    ray::{Ray, RayHit, RayMarchingHit},
+    scene::Scene,
 };
 
 use super::geometry;
@@ -49,10 +50,10 @@ impl Cuboid {
         *self
     }
 
-    pub fn sdf(&self, scene: &Scene, ray: &Ray, t: f32, object: &Object3D) -> (f32, Vec3, Ray) {
+    pub fn sdf(&self, scene: &Scene, ray: &Ray, t: f32, object: &Object3D) -> RayMarchingHit {
         let ray = self.transform_ray(ray);
-        
-        let p = ray.origin+ray.direction*t;
+
+        let p = ray.origin + ray.direction * t;
 
         //let p = self.inv_transform*vec4(p.x, p.y, p.z, 1.0);
         //let p = p.xyz();
@@ -61,7 +62,11 @@ impl Cuboid {
         let q = p.abs() - self.dimension + corner_radius;
         let m = object.material_index();
         let c = scene.materials[m].albedo;
-        (q.max(Vec3::ZERO).length() + q.x.max(q.y.max(q.z)).min(0.0) - corner_radius, c, ray)
+        RayMarchingHit::new(
+            q.max(Vec3::ZERO).length() + q.x.max(q.y.max(q.z)).min(0.0) - corner_radius,
+            c,
+            ray,
+        )
     }
 
     pub fn transform_normal(&self, n: Vec3) -> Vec3 {
@@ -120,6 +125,4 @@ impl Intersection for Cuboid {
             v: u_v.y,
         })
     }
-
-
 }

@@ -4,7 +4,7 @@ use glam::{vec3, vec4, Mat4, Vec3, Vec4Swizzles};
 
 use crate::{
     objects::{Intersection, Object3D},
-    ray::{Ray, RayHit},
+    ray::{Ray, RayHit, RayMarchingHit},
     scene::Scene,
 };
 
@@ -69,7 +69,7 @@ impl Sphere {
         *self
     }
 
-    pub fn sdf(&self, scene: &Scene, ray: &Ray, t: f32, object: &Object3D) -> (f32, Vec3, Ray) {
+    pub fn sdf(&self, scene: &Scene, ray: &Ray, t: f32, object: &Object3D) -> RayMarchingHit {
         let ray = self.transform_ray(ray);
         let p = ray.origin + ray.direction * t;
         //let p = self.inv_transform * vec4(p.x, p.y, p.z, 1.0);
@@ -78,7 +78,7 @@ impl Sphere {
         let m = object.material_index();
         let c = scene.materials[m].albedo;
 
-        (p.length() - self.radius, c, ray)
+        RayMarchingHit::new(p.length() - self.radius, c, ray)
     }
 
     pub fn transform_normal(&self, n: Vec3) -> Vec3 {

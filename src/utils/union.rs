@@ -2,7 +2,7 @@ use glam::{Vec2, Vec3};
 
 use crate::{
     objects::{Intersection, Object3D},
-    ray::{Ray, RayHit},
+    ray::{Ray, RayHit, RayMarchingHit},
     scene::Scene,
 };
 
@@ -23,22 +23,22 @@ impl Union {
         scene.objects[self.first].material_index()
     }
 
-    pub fn sdf(&self, scene: &Scene, ray: &Ray, t: f32) -> (f32, Vec3, Ray) {
-        //let p = ray.origin + ray.direction * t;
+    pub fn sdf(&self, scene: &Scene, ray: &Ray, t: f32) -> RayMarchingHit {
+        
         let o1 = scene.objects[self.first];
         let o2 = scene.objects[self.second];
 
-        let (d1, c1, r1) = o1.sdf(scene, ray, t, &o1);
-        let (d2, c2, r2) = o2.sdf(scene, ray, t, &o2);
+        let h1 = o1.sdf(scene, ray, t, &o1);
+        let h2 = o2.sdf(scene, ray, t, &o2);
 
-        let i = geometry::interpolation(d1, d2, 0.7);
-        let col = geometry::mix_vec3(c1, c2, 1. - i);
+        let i = geometry::interpolation(h1.distance, h2.distance, 0.7);
+        let col = geometry::mix_vec3(h1.albedo, h2.albedo, 1. - i);
 
-        let d = geometry::smooth_union(d1, d2, 0.7);
-        if d1 < d2 {
-            return (d, col, r1)
+        let d = geometry::smooth_union(h1.distance, h2.distance, 0.7);
+        if h1.distance < h2.distance {
+            return RayMarchingHit::new(d, col, h1.transformed_ray)
         }
-        (d, col, r2)
+        RayMarchingHit::new (d, col, h2.transformed_ray)
     }
 }
 

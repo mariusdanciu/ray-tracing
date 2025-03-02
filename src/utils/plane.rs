@@ -2,7 +2,7 @@ use glam::{Vec2, Vec3};
 
 use crate::{
     objects::{Intersection, Object3D},
-    ray::{Ray, RayHit},
+    ray::{Ray, RayHit, RayMarchingHit},
     scene::Scene,
 };
 
@@ -28,12 +28,12 @@ impl Plane {
         })
     }
 
-    pub fn sdf(&self, scene: &Scene, ray: &Ray, t: f32, object: &Object3D) -> (f32, Vec3, Ray) {
+    pub fn sdf(&self, scene: &Scene, ray: &Ray, t: f32, object: &Object3D) -> RayMarchingHit {
         let p = ray.origin + ray.direction * t;
         let m = object.material_index();
         let c = scene.materials[m].albedo;
 
-        ((p - self.point).dot(self.normal), c, *ray)
+        RayMarchingHit::new((p - self.point).dot(self.normal), c, *ray)
     }
 }
 

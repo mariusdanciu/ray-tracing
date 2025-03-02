@@ -4,7 +4,7 @@ use glam::{vec2, vec3, vec4, Mat4, Vec2, Vec3, Vec3Swizzles, Vec4Swizzles};
 
 use crate::{
     objects::{Intersection, Object3D},
-    ray::{Ray, RayHit},
+    ray::{Ray, RayHit, RayMarchingHit},
     scene::Scene,
 };
 
@@ -53,7 +53,7 @@ impl Cylinder {
         *self
     }
 
-    pub fn sdf(&self, scene: &Scene, ray: &Ray, t: f32, object: &Object3D) -> (f32, Vec3, Ray) {
+    pub fn sdf(&self, scene: &Scene, ray: &Ray, t: f32, object: &Object3D) -> RayMarchingHit {
         let ray = self.transform_ray(ray);
 
         let p = ray.origin + ray.direction * t;
@@ -70,7 +70,7 @@ impl Cylinder {
         let mat = scene.materials[m];
         let c = mat.albedo;
 
-        (dist, c, ray)
+        RayMarchingHit::new(dist, c, ray)
     }
 
     pub fn transform_normal(&self, n: Vec3) -> Vec3 {
