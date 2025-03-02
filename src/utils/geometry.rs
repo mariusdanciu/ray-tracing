@@ -58,11 +58,16 @@ pub fn tri_planar_mapping(p: Vec3, n: Vec3, blending: f32, scale: f32, tex: &Tex
     let xz = p.xz() * scale;
     let yz = p.yz() * scale;
 
-    let x = tex.from_uv(yz.x, yz.y); 
-    let y = tex.from_uv(xz.x, xz.y); 
-    let z = tex.from_uv(xy.x, xy.y); 
+    let x = tex.from_uv(yz.x, yz.y);
+    let y = tex.from_uv(xz.x, xz.y);
+    let z = tex.from_uv(xy.x, xy.y);
 
     let bw = n.abs().powf(blending);
     let bw = bw / (bw.x + bw.y + bw.z);
     x * bw.x + y * bw.y + z * bw.z
+}
+
+pub fn fog(col: Vec3, t: f32, fog_color: Vec3, density: f32) -> Vec3 {
+    let fog_amount = 1.0 - (-t * density).exp2();
+    mix_vec3(col, fog_color, fog_amount)
 }

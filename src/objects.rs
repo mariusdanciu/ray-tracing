@@ -95,11 +95,19 @@ pub enum MaterialType {
 }
 
 #[derive(Default, Debug, Clone)]
+pub enum MappingType {
+    #[default]
+    Exact,
+    TriPlanar
+}
+
+#[derive(Default, Debug, Clone)]
 pub struct Texture {
     pub path: String,
     pub width: u32,
     pub height: u32,
     pub bytes: Vec<u8>,
+    pub mapping_type: MappingType
 }
 
 impl Texture {

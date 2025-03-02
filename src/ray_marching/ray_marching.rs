@@ -38,7 +38,7 @@ impl<'a> RayMarching<'a> {
                     if d.0 < min_dist {
                         min_dist = d.0;
                         albedo = d.1;
-                        tray = d.2; 
+                        tray = d.2;
                         obj_idx = idx;
                     }
                 }
@@ -47,7 +47,7 @@ impl<'a> RayMarching<'a> {
                     if d.0 < min_dist {
                         min_dist = d.0;
                         albedo = d.1;
-                        tray = d.2; 
+                        tray = d.2;
                         obj_idx = idx;
                     }
                 }
@@ -55,8 +55,8 @@ impl<'a> RayMarching<'a> {
                     let d = s.sdf(&self.scene, ray, t, &obj);
                     if d.0 < min_dist {
                         min_dist = d.0;
-                        albedo = d.1; 
-                        tray = d.2; 
+                        albedo = d.1;
+                        tray = d.2;
                         obj_idx = idx;
                     }
                 }
@@ -66,7 +66,7 @@ impl<'a> RayMarching<'a> {
                     if d.0 < min_dist {
                         min_dist = d.0;
                         obj_idx = idx;
-                        tray = d.2; 
+                        tray = d.2;
                         albedo = d.1
                     }
                 }
@@ -196,11 +196,10 @@ impl<'a> RayMarching<'a> {
             let hit = ray.origin + ray.direction * t;
 
             let n = self.normal(hit);
-            
+
             let obj = self.scene.objects[obj_idx];
             let mat_idx = obj.material_index();
             let mat = self.scene.materials[mat_idx];
-
 
             //let n = (obj.transform().1*vec4(n.x, n.y, n.z, 0.0)).xyz().normalize();
             if let Some(t1) = mat.texture {
@@ -210,13 +209,13 @@ impl<'a> RayMarching<'a> {
                 // let tex = &self.scene.textures[t1];
                 // albedo = tex.from_uv(v* INV_PI, u* INV_PI);
 
-                let n1: Vec3 = (obj.transform().1 * vec4(n.x, n.y, n.z, 0.0)).xyz().normalize();
+                let n1: Vec3 = (obj.transform().1 * vec4(n.x, n.y, n.z, 0.0))
+                    .xyz()
+                    .normalize();
                 let hit1 = r.origin + r.direction * t;
 
-                
                 let tex = &self.scene.textures[t1];
                 albedo = geometry::tri_planar_mapping(hit1, n1, 0.8, 0.5, tex);
-
             }
 
             let rayhit = RayHit {
@@ -232,8 +231,8 @@ impl<'a> RayMarching<'a> {
             let occ = self.occlusion(hit, n);
 
             color *= occ;
-            color *= (-0.05 * t).exp();
-            color *= 1.0 - geometry::smooth_step(5.0, 30.0, t);
+           // color *= geometry::fog(color, t, vec3(0., 0., 0.), 0.05); //(-0.05 * t).exp();
+            color *= 1.0 - geometry::smooth_step(1.0, 20.0, t);
             return color;
         }
 

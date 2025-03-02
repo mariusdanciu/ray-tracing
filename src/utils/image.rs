@@ -23,7 +23,8 @@ impl ImageUtils {
             path: p,
             width: w,
             height: h,
-            bytes
+            bytes,
+            mapping_type: crate::objects::MappingType::Exact
         })
     }
 }

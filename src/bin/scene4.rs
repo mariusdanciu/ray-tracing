@@ -30,14 +30,14 @@ pub fn main() -> Result<(), AppError> {
         Union::new(1, 2),
         Plane::new(vec3(0., 1., 0.), vec3(0., 0., 0.), Some(vec2(5., 5.)), 0),
         Sphere::new(Vec3::new(0., -1., -2.), 1., 1),
-        Cylinder::new(vec3(-1., 1.2, 0.2), 0.2, vec3(0., 0., 45.), 1.0, 2),
+        Cylinder::new(vec3(-1., 0.8, 0.2), 0.2, vec3(0., 0., 45.), 1.0, 2),
         Cuboid::new(
             vec3(-1., 1.5, 0.2),
             vec3(0., 20., 0.),
             vec3(0.5, 1., 0.5),
             1,
         ),
-       // Sphere::new(Vec3::new(2., 1., -2.), 1., 3),
+        // Sphere::new(Vec3::new(2., 1., -2.), 1., 3),
         Sphere::new_sphere_with_rotation(Vec3::new(2.0, 1., -2.), vec3(-90., 0., 0.), 1., 3),
         Substraction::new(3, 4),
     ];
@@ -56,9 +56,9 @@ pub fn main() -> Result<(), AppError> {
             },
             Material {
                 ambience: 0.3,
-                diffuse: 0.4,
-                shininess: 64.,
-                specular: 0.5,
+                diffuse: 0.3,
+                shininess: 60.,
+                specular: 0.2,
                 albedo: Vec3::new(1., 0.8, 0.6),
                 kind: MaterialType::Reflective { roughness: 1. },
                 ..Default::default()
@@ -66,8 +66,8 @@ pub fn main() -> Result<(), AppError> {
             Material {
                 ambience: 0.4,
                 diffuse: 0.4,
-                shininess: 64.,
-                specular: 1.5,
+                shininess: 50.,
+                specular: 2.5,
                 albedo: Vec3::new(0.0, 0.4, 1.),
                 kind: MaterialType::Reflective { roughness: 1. },
                 texture: Some(2),
